@@ -20,8 +20,8 @@ RUN yum -y install python36
 RUN yum -y install python36-pip
 RUN pip3 install --upgrade hug 
 
-COPY ./src/* /root/web/
+COPY ./src/ /root/web/src/
 
 EXPOSE 8000
-CMD ["hug", "-f", "/root/web/hello.py"]
-
+WORKDIR /root/web
+CMD ["hug", "-f", "./src/api.py"]
