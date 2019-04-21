@@ -1,6 +1,7 @@
 # Top level API for the mini-website
 import hug
 import src.controllers.status
+import src.controllers.logs
 
 # Global onetime setup when we first get going.
 from src.utils.status_mgr import init_status
@@ -13,4 +14,4 @@ def say_hi():
 
 @hug.extend_api()
 def with_other_apis():
-    return [src.controllers.status]
+    return [src.controllers.status, src.controllers.logs]
