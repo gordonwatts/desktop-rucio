@@ -10,17 +10,35 @@
 # TODO: CertPath needs to be non-empty
 Param(
     # The certifcate folder path
+    [Parameter(Mandatory=$true)]
     [ValidateScript({Test-Path $_ -PathType 'Container'})]
     [string]
     $CertPath,
+
+    [Parameter(Mandatory=$true)]
+    [string]
+    $GRIDPassword,
+
     [string]
     $containerVersion = "alpha-0.1.0",
+
     [string]
     $RUCIOAccount = "gwatts",
+
     [int]
-    $WebPort = 8000
+    $WebPort = 8000,
+
+    [string]
+    $VOMS = "atlas",
+
+    [switch]
+    $StartBash
 )
 Process {
+    $start_command = ""
+    if ($StartBash) {
+        $start_command = "/bin/bash"
+    }
     docker run `
         -v $CertPath/rucio.cfg:/opt/rucio/etc/rucio.cfg `
         -v $CertPath/usercert:/root/rawcert `
@@ -29,7 +47,10 @@ Process {
         -v $CertPath/vomsdir:/etc/grid-security/vomsdir `
         -v $CertPath/ca.crt:/etc/ca.crt `
         --name=desktop-rucio `
-        -eRUCIO_ACCOUNT=$RUCIOAccount `
+        -e RUCIO_ACCOUNT=${RUCIOAccount} `
+        -e GRID_PASSWORD=${GRIDPassword} `
+        -e GRID_VOMS=${VOMS} `
         --rm -d -p ${WebPort}:8000 -it `
-        desktop-rucio:$containerVersion
+        desktop-rucio:$containerVersion `
+        $start_command
 }

@@ -1,12 +1,18 @@
 {
     "cSpell.words": [
+        "Popen",
+        "bufsize",
+        "dudewhereismysoda",
         "fhand",
         "fname",
+        "gcert",
         "lmgr",
         "mkdir",
         "pytest",
         "rmtree",
         "rucio",
-        "shutil"
-    ]
+        "shutil",
+        "voms"
+    ],
+    "docker.imageBuildContextPath": "."
 }

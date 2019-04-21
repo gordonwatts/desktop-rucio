@@ -12,14 +12,14 @@
 # For more info see the documentation.
 FROM rucio/rucio-clients:release-1.19.6
 
-COPY Docker/setup.sh /root/setup.sh
-RUN echo "source /root/setup.sh" >> /root/.bashrc
-
 # Get the webserver installed and running
 RUN yum -y install python36
 RUN yum -y install python36-pip
 RUN pip3 install --upgrade hug 
 
+# The local files
+RUN echo "source /root/setup.sh" >> /root/.bashrc
+COPY Docker/setup.sh /root/setup.sh
 COPY ./src/ /root/web/src/
 
 EXPOSE 8000
