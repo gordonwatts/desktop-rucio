@@ -1,0 +1,27 @@
+# Runs commands in a subprocess
+from collections import namedtuple
+from subprocess import Popen, PIPE, STDOUT
+
+exe_result = namedtuple('ExeResult','shell_result shell_status shell_output')
+
+class runner:
+    def __init__(self):
+        pass
+    
+    def shell_execute(self, shell_command, log_func = None):
+        '''
+        Run in the default command shell, synchronously.
+
+        Arguments:
+        shell_command       The shell command to run
+        logger              Log the lines in real time.
+        '''
+        lines = []
+        with Popen(shell_command, shell=True, stdout=PIPE, stderr=STDOUT, bufsize=1, universal_newlines=True) as p:
+            for line in p.stdout:
+                l_trim = line.rstrip()
+                lines.append(l_trim)
+                if log_func is not None:
+                    log_func(l_trim)
+            p.wait()
+            return exe_result(p.returncode, p.returncode==0, lines)
