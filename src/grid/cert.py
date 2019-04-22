@@ -60,7 +60,7 @@ class cert:
                     return
 
             # Try the registration.
-            sleep=60*60
+            sleep=11*60*60
             if not self.register():
                 sleep = 5*60
             
