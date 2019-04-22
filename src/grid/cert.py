@@ -3,6 +3,8 @@ from src.utils.status_mgr import status_mgr
 from src.utils.logging_mgr import logging_mgr
 from src.utils.runner import runner
 
+import time
+
 class cert:
     '''
     Drives registration of a grid certificate
@@ -38,3 +40,29 @@ class cert:
 
         # Let the calling guy know how we did.
         return result.shell_status
+
+    def run_registration_loop(self, executor=None, sleep_func=None, quit_func=None):
+        '''
+        Run the registration in a continuous loop. Assume every 11 hours we need to
+        re-do the registration.
+        '''
+        # Allow injection for sleep so we can dummy this out in a test.
+        sleep_me = time.sleep if sleep_func is None else sleep_func
+
+        # Set the status when we start. Assume nothing is working when we arrive here.
+        self._status.save_status('grid_cert', {'is_good': False, 'status': 'acquiring'})
+
+        # Now a loop
+        while True:
+            # Terminate?
+            if quit_func is not None:
+                if quit_func():
+                    return
+
+            # Try the registration.
+            sleep=60*60
+            if not self.register():
+                sleep = 5*60
+            
+            # Now, sleep.
+            sleep_me(sleep)

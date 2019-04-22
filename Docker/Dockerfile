@@ -18,10 +18,11 @@ RUN yum -y install python36-pip
 RUN pip3 install --upgrade hug 
 
 # The local files
-RUN echo "source /root/setup.sh" >> /root/.bashrc
-COPY Docker/setup.sh /root/setup.sh
+COPY Docker/setup.sh /root/web/setup.sh
+COPY Docker/cert_manager.py /root/web/cert_manager.py
+COPY Docker/startup.sh /root/web/startup.sh
 COPY ./src/ /root/web/src/
 
 EXPOSE 8000
 WORKDIR /root/web
-CMD ["hug", "-f", "./src/api.py"]
+CMD ["./startup.sh"]

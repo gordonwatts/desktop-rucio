@@ -4,18 +4,16 @@ import os
 import tempfile
 import shutil
 
-# Default location of status json files
-default_file_location = tempfile.gettempdir() + "/desktop-rucio-status"
-
-def init_status():
-    if not os.path.exists(default_file_location):
-        os.mkdir(default_file_location)
-
 class status_mgr:
     r'''
     Class to help manage the status manager
     '''
-    def __init__ (self, location = default_file_location):
+    def __init__ (self, location = None):
+        # Get our path all set up
+        if location is None:
+            location = "{0}/desktop-rucio-status".format(tempfile.gettempdir())
+        if not os.path.exists(location):
+            os.mkdir(location)
         self._loc = location
     
     def current_status(self):
