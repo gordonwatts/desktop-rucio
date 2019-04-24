@@ -40,12 +40,12 @@ Process {
         $start_command = "/bin/bash"
     }
     docker run `
-        -v $CertPath/rucio.cfg:/opt/rucio/etc/rucio.cfg `
-        -v $CertPath/usercert:/root/rawcert `
-        -v $CertPath/vomses:/etc/vomses `
-        -v $CertPath/grid-certs:/etc/grid-security/certificates `
-        -v $CertPath/vomsdir:/etc/grid-security/vomsdir `
-        -v $CertPath/ca.crt:/etc/ca.crt `
+        -v $CertPath/rucio.cfg:/opt/rucio/etc/rucio.cfg:ro `
+        -v $CertPath/usercert:/root/rawcert:ro `
+        -v $CertPath/vomses:/etc/vomses:ro `
+        -v $CertPath/grid-certs:/etc/grid-security/certificates:ro `
+        -v $CertPath/vomsdir:/etc/grid-security/vomsdir:ro `
+        -v $CertPath/ca.crt:/etc/ca.crt:ro `
         --name=desktop-rucio `
         -e RUCIO_ACCOUNT=${RUCIOAccount} `
         -e GRID_PASSWORD=${GRIDPassword} `
