@@ -53,6 +53,7 @@ def cache_empty():
     class cache_good_dummy():
         def __init__(self):
             self._ds_list = {}
+            self._in_progress = []
 
         def get_listing(self, ds_name):
             if ds_name in self._ds_list:
@@ -61,6 +62,11 @@ def cache_empty():
 
         def save_listing(self, ds_info):
             self._ds_list[ds_info.Name] = ds_info
+
+        def mark_query(self, ds_name):
+            self._in_progress.append(ds_name)
+        def query_in_progress(self, ds_name):
+            return ds_name in self._in_progress
 
     return cache_good_dummy()
 

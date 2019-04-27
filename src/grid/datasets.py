@@ -1,6 +1,7 @@
 # Manage everything having to do with the organization
 # of datasets.
 from src.grid.rucio import RucioFile, rucio
+from src.utils.logging_mgr import logging_mgr
 from src.utils.dataset_cache_mgr import dataset_cache_mgr, dataset_listing_info
 from typing import List, Optional, Tuple
 import datetime
@@ -18,7 +19,7 @@ class dataset_mgr:
 
     We do nothing with synced datasets!
     '''
-    def __init__(self, data_mgr:dataset_cache_mgr, rucio_mgr: Optional[rucio] = None, seconds_between_retries:float=60.0*5):
+    def __init__(self, data_mgr:dataset_cache_mgr, rucio_mgr: Optional[rucio] = None, seconds_between_retries:float=60.0*5, logger:logging_mgr = None):
         '''
         Setup a dataset_mgr
 
@@ -30,6 +31,7 @@ class dataset_mgr:
         self._rucio = rucio_mgr if rucio_mgr is not None else rucio()
         self._cache_mgr = data_mgr
         self._seconds_between_retries = seconds_between_retries
+        self._log = logger if logger is not None else logging_mgr()
 
     def get_ds_contents(self, ds_name: str, maxAge: Optional[datetime.timedelta] = None, maxAgeIfNotSeen: Optional[datetime.timedelta] = None) -> Tuple[DatasetQueryStatus, Optional[List[RucioFile]]]:
         '''
@@ -92,7 +94,7 @@ class dataset_mgr:
             sleep(seconds_to_wait)
 
         try:
-            r = self._rucio.get_file_listing(ds_name)
+            r = self._rucio.get_file_listing(ds_name, log_func=lambda l: self._log.log('rucio_file_listing', l))
             # If the dataset doesn't exist, then we need to set the expiration time.
             expire = (datetime.datetime.now() + datetime.timedelta(minutes=60)) if r is None else None
 

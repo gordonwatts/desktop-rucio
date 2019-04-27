@@ -14,7 +14,7 @@ def rucio_2file_dataset(simple_dataset):
             self._ds = ds
             self.CountCalled = 0
 
-        def get_file_listing(self, ds_name):
+        def get_file_listing(self, ds_name, log_func = None):
             self.CountCalled += 1
             if ds_name == self._ds.Name:
                 return self._ds.FileList
@@ -29,7 +29,7 @@ def rucio_2file_dataset_take_time(simple_dataset):
             self._ds = ds
             self.CountCalled = 0
 
-        def get_file_listing(self, ds_name):
+        def get_file_listing(self, ds_name, log_func = None):
             sleep(0.005)
             self.CountCalled += 1
             if ds_name == self._ds.Name:
@@ -45,7 +45,7 @@ def rucio_2file_dataset_with_fails(simple_dataset):
             self._ds = ds
             self.CountCalled = 0
 
-        def get_file_listing(self, ds_name):
+        def get_file_listing(self, ds_name, log_func = None):
             self.CountCalled += 1
             if self.CountCalled < 5:
                 raise BaseException("Please Try again Due To Internet Being Out")
@@ -62,7 +62,7 @@ def rucio_2file_dataset_shows_up_later(simple_dataset):
             self._ds = ds
             self.CountCalled = 0
 
-        def get_file_listing(self, ds_name):
+        def get_file_listing(self, ds_name, log_func = None):
             self.CountCalled += 1
             if self.CountCalled < 2:
                 return None
