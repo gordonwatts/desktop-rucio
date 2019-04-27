@@ -31,7 +31,6 @@ class status_mgr:
         Save a status under `status_name` to the local directory. The `dict_of_items` is saved
         as json in a file.
         '''
-        global default_file_location
         r = json.dumps(dict_of_items)
         with open("{0}/{1}.json".format(self._loc, status_name), 'w') as f:
             f.write(r)
