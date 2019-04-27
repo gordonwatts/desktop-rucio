@@ -56,6 +56,23 @@ def rucio_2file_dataset_with_fails(simple_dataset):
     return rucio_dummy(simple_dataset)
 
 @pytest.fixture()
+def rucio_2file_dataset_shows_up_later(simple_dataset):
+    class rucio_dummy:
+        def __init__(self, ds):
+            self._ds = ds
+            self.CountCalled = 0
+
+        def get_file_listing(self, ds_name):
+            self.CountCalled += 1
+            if self.CountCalled < 2:
+                return None
+            if ds_name == self._ds.Name:
+                return self._ds.FileList
+            return None
+
+    return rucio_dummy(simple_dataset)
+
+@pytest.fixture()
 def cache_empty():
     'Create an empty cache that will save anything saved in it.'
     class cache_good_dummy():
@@ -164,6 +181,25 @@ def test_two_queries_for_good_dataset(rucio_2file_dataset_take_time, cache_empty
     sleep(0.02)
     assert 1 == rucio_2file_dataset_take_time.CountCalled
 
-# def test_query_for_bad_dataset_retrigger():
-#     'After a bad dataset has aged, automatically queue a new query'
-#     assert False
+def test_dataset_appears(rucio_2file_dataset_shows_up_later, cache_empty, simple_dataset):
+    'After a bad dataset has aged, automatically queue a new query'
+    dm = dataset_mgr(cache_empty, rucio_mgr=rucio_2file_dataset_shows_up_later)
+    _ = dm.get_ds_contents(simple_dataset.Name)
+    wait_some_time(lambda: rucio_2file_dataset_shows_up_later.CountCalled == 0)
+    status, _ = dm.get_ds_contents(simple_dataset.Name)
+    assert DatasetQueryStatus.does_not_exist == status
+
+    # Query, but demand a quick re-check
+    status, _ = dm.get_ds_contents(simple_dataset.Name, maxAgeIfNotSeen=datetime.timedelta(seconds=0))
+    assert DatasetQueryStatus.query_queued == status
+    wait_some_time(lambda: rucio_2file_dataset_shows_up_later.CountCalled == 1)
+    status, _ = dm.get_ds_contents(simple_dataset.Name, maxAgeIfNotSeen=datetime.timedelta(seconds=0))
+    assert DatasetQueryStatus.results_valid == status
+
+# Need the following tests:
+# maxAgeIfNotSeen set to a large number, should not re-trigger
+# same two tests for maxAge
+# Test that we pay attention to whatever we write into the Expires field of the dataset.
+#  Redesign: write date of when it was checked.
+#  Default the maxageifnotseen to be 1 hour
+#  Now we don't need two different bits of code.
