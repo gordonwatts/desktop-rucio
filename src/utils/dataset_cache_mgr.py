@@ -15,16 +15,16 @@ class dataset_listing_info:
     '''
     Simple object that contains a list of files in the dataset
     '''
-    def __init__ (self, name: str, expiration: Optional[datetime], files: List[RucioFile]):
+    def __init__ (self, name: str, files: List[RucioFile], created_time: Optional[datetime]=None):
         '''
         Initialize a dataset file listing.
 
         Arguments
-        expiration:     This listing should be ignored after this date. If None, then it never expires
+        created_time:   When this listing was created. Used to calculate age
         flies:          Listing of files. None means the dataset does not exist. Empty list means an empty dataset.
         '''
         self.Name = name
-        self.Expiration = expiration
+        self.Created = created_time if created_time is not None else datetime.now()
         self.FileList = files
 
 class dataset_cache_mgr:

@@ -29,7 +29,6 @@ def test_ds_listing_roundtrip(local_cache, simple_dataset):
     local_cache.save_listing(simple_dataset)
     ds_back = local_cache.get_listing(simple_dataset.Name)
     assert simple_dataset.Name == ds_back.Name
-    assert simple_dataset.Expiration == ds_back.Expiration
     assert len(simple_dataset.FileList) == len(ds_back.FileList)
     for f in zip(simple_dataset.FileList, ds_back.FileList):
         assert f[0].filename == f[1].filename

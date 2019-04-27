@@ -11,6 +11,24 @@ from time import sleep
 
 DatasetQueryStatus = Enum('DatasetQueryStatus', 'does_not_exist, query_queued, results_valid')
 
+def ds_age_too_old(age:datetime.datetime, time_valid:Optional[datetime.timedelta]):
+    '''If current time is older than datetime plus timedelta.
+
+    Arguments
+    age             When the dataset was created
+    time_valid      Delta time that the dataset is valid
+                        None - dataset is always valid
+                        timedelta of 0 seconds - Always invalid
+                        timedelta - how long till the present time it is allowed.
+
+    Returns
+    valid           True if still valid
+    '''
+    if time_valid is None:
+        return False
+    if time_valid.seconds == 0:
+        return True
+    return (datetime.datetime.now() + time_valid) <= age
 
 class dataset_mgr:
     r'''
@@ -33,13 +51,13 @@ class dataset_mgr:
         self._seconds_between_retries = seconds_between_retries
         self._log = logger if logger is not None else logging_mgr()
 
-    def get_ds_contents(self, ds_name: str, maxAge: Optional[datetime.timedelta] = None, maxAgeIfNotSeen: Optional[datetime.timedelta] = None) -> Tuple[DatasetQueryStatus, Optional[List[RucioFile]]]:
+    def get_ds_contents(self, ds_name: str, maxAge: Optional[datetime.timedelta] = None, maxAgeIfNotSeen: Optional[datetime.timedelta] = datetime.timedelta(minutes=60)) -> Tuple[DatasetQueryStatus, Optional[List[RucioFile]]]:
         '''
         Return the list of files that are in a dataset if they are in our local cache. If not, then queue a query to
         rucio to get the actual file contents. The results have age checks, which will trigger a re-query.
 
-        If the dataset does not exist on the grid, it will be placed into our local cache, but given a 1 hour expiration
-        time (so in an hour you can re-query and it will automatically re-query rucio).
+        If the dataset does not exist on the grid, it will be placed into our local cache. If you try to requery it,
+        the not-existing result will be given for up to one hour (by default), and after that a re-query will be triggered.
 
         Arguments
         name              The rucio fully qualified name of the dataset
@@ -66,7 +84,9 @@ class dataset_mgr:
         listing = self._cache_mgr.get_listing(ds_name)
         if listing is not None:
             status = DatasetQueryStatus.results_valid if listing.FileList is not None else DatasetQueryStatus.does_not_exist
-            return (status, listing.FileList)
+            if (status is not DatasetQueryStatus.does_not_exist or not ds_age_too_old(listing.Created, maxAgeIfNotSeen)) \
+                and (status is not DatasetQueryStatus.results_valid or not ds_age_too_old(listing.Created, maxAge)):
+                return (status, listing.FileList)
 
         # Need to write something into the cache that indicates we are working on getting this query back.
         # TODO: Fix race condition - if two threads are looking at the same thing, both might generate a rucio query
@@ -95,11 +115,8 @@ class dataset_mgr:
 
         try:
             r = self._rucio.get_file_listing(ds_name, log_func=lambda l: self._log.log('rucio_file_listing', l))
-            # If the dataset doesn't exist, then we need to set the expiration time.
-            expire = (datetime.datetime.now() + datetime.timedelta(minutes=60)) if r is None else None
-
             # Cache the result.
-            self._cache_mgr.save_listing(dataset_listing_info(ds_name, expire, r))
+            self._cache_mgr.save_listing(dataset_listing_info(ds_name, r))
         except BaseException as e:
             # If this is an exception that tells us to re-try, then we need to "requeue" ourselves.
             if "Try again" in str(e):

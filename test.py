@@ -1,6 +1,6 @@
 # Test harness for debugging easily.
 
-from tests.grid.test_datasets import test_two_queries_for_good_dataset
+from tests.grid.test_datasets import test_dataset_appears
 from src.grid.rucio import RucioFile
 from src.utils.dataset_cache_mgr import dataset_listing_info
 
@@ -49,6 +49,23 @@ def rucio_2file_dataset_take_time(simple_dataset):
 
     return rucio_dummy(simple_dataset)
 
+def rucio_2file_dataset_shows_up_later(simple_dataset):
+    class rucio_dummy:
+        def __init__(self, ds):
+            self._ds = ds
+            self.CountCalled = 0
+
+        def get_file_listing(self, ds_name, log_func = None):
+            self.CountCalled += 1
+            if self.CountCalled < 2:
+                return None
+            if ds_name == self._ds.Name:
+                return self._ds.FileList
+            return None
+
+    return rucio_dummy(simple_dataset)
+
+
 def cache_empty():
     class cache_good_dummy():
         def __init__(self):
@@ -62,6 +79,7 @@ def cache_empty():
 
         def save_listing(self, ds_info):
             self._ds_list[ds_info.Name] = ds_info
+            self._in_progress = []
 
         def mark_query(self, ds_name):
             self._in_progress.append(ds_name)
@@ -74,7 +92,7 @@ def simple_dataset():
     'Create a simple dataset with 2 files in it and no expiration'
     f1 = RucioFile('f1.root', 100, 1)
     f2 = RucioFile('f2.root', 200, 2)
-    return dataset_listing_info('dataset1', None, [f1, f2])
+    return dataset_listing_info('dataset1', [f1, f2])
 
 
-test_two_queries_for_good_dataset(rucio_2file_dataset_take_time(simple_dataset()), cache_empty(), simple_dataset())
+test_dataset_appears(rucio_2file_dataset_shows_up_later(simple_dataset()), cache_empty(), simple_dataset())

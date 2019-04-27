@@ -85,17 +85,17 @@ def cert_good_runner():
 # A simple dataset for use in testing.
 @pytest.fixture()
 def simple_dataset():
-    'Create a simple dataset with 2 files in it and no expiration'
+    'Create a simple dataset with 2 files in it'
     f1 = RucioFile('f1.root', 100, 1)
     f2 = RucioFile('f2.root', 200, 2)
-    return dataset_listing_info('dataset1', None, [f1, f2])
+    return dataset_listing_info('dataset1', [f1, f2])
 
 @pytest.fixture()
 def empty_dataset():
-    'Create a simple dataset with 2 files in it and no expiration'
-    return dataset_listing_info('dataset1', None, [])
+    'Create a simple dataset with 2 files in it'
+    return dataset_listing_info('dataset1', [])
 
 @pytest.fixture()
 def nonexistant_dataset():
-    'Create a simple dataset with 2 files in it and no expiration'
-    return dataset_listing_info('dataset1', timedelta(minutes=60), None)
+    'Create a simple dataset with 2 files in it'
+    return dataset_listing_info('dataset1', None)

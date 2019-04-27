@@ -127,10 +127,9 @@ def test_dataset_query_resolved(rucio_2file_dataset, cache_empty, simple_dataset
     assert DatasetQueryStatus.results_valid == status
     assert len(simple_dataset.FileList) == len(files)
 
-    # Make sure we didn't re-query for this, and the expiration date is not set.
+    # Make sure we didn't re-query for this.
     assert 1 == rucio_2file_dataset.CountCalled == 1
     info = cache_empty.get_listing(simple_dataset.Name)
-    assert None is info.Expiration
 
 def test_query_for_bad_dataset(rucio_2file_dataset, cache_empty, simple_dataset):
     'Ask for a bad dataset, and get back a null'
@@ -145,7 +144,7 @@ def test_query_for_bad_dataset(rucio_2file_dataset, cache_empty, simple_dataset)
 
     # Make sure that a timeout of an hour has been set on the dataset.
     info = cache_empty.get_listing('bogus_ds')
-    assert (datetime.datetime.now() + datetime.timedelta(minutes=60)) == info.Expiration
+    assert datetime.datetime.now() == info.Created
 
 def test_look_for_good_dataset_that_fails_a_bunch(rucio_2file_dataset_with_fails, cache_empty, simple_dataset):
     'Queue and look for a good dataset that takes a few queries to show up with results'
@@ -193,14 +192,74 @@ def test_dataset_appears(rucio_2file_dataset_shows_up_later, cache_empty, simple
     status, _ = dm.get_ds_contents(simple_dataset.Name, maxAgeIfNotSeen=datetime.timedelta(seconds=0))
     assert DatasetQueryStatus.query_queued == status
     wait_some_time(lambda: rucio_2file_dataset_shows_up_later.CountCalled == 1)
-    status, _ = dm.get_ds_contents(simple_dataset.Name, maxAgeIfNotSeen=datetime.timedelta(seconds=0))
+    status, _ = dm.get_ds_contents(simple_dataset.Name)
     assert DatasetQueryStatus.results_valid == status
 
-# Need the following tests:
-# TODO:
-# maxAgeIfNotSeen set to a large number, should not re-trigger
-# same two tests for maxAge
-# Test that we pay attention to whatever we write into the Expires field of the dataset.
-#  Redesign: write date of when it was checked.
-#  Default the maxageifnotseen to be 1 hour
-#  Now we don't need two different bits of code.
+def test_dataset_always_missing_noretry(rucio_2file_dataset_shows_up_later, cache_empty, simple_dataset):
+    'Do not requery for the dataset'
+    dm = dataset_mgr(cache_empty, rucio_mgr=rucio_2file_dataset_shows_up_later)
+    _ = dm.get_ds_contents(simple_dataset.Name)
+    wait_some_time(lambda: rucio_2file_dataset_shows_up_later.CountCalled == 0)
+    status, _ = dm.get_ds_contents(simple_dataset.Name)
+    assert DatasetQueryStatus.does_not_exist == status
+
+    # Query, but demand a quick re-check
+    status, _ = dm.get_ds_contents(simple_dataset.Name, maxAgeIfNotSeen=None)
+    assert DatasetQueryStatus.does_not_exist == status
+    assert 1 == rucio_2file_dataset_shows_up_later.CountCalled
+
+def test_dataset_always_missing_longretry(rucio_2file_dataset_shows_up_later, cache_empty, simple_dataset):
+    'Do not requery for the dataset'
+    dm = dataset_mgr(cache_empty, rucio_mgr=rucio_2file_dataset_shows_up_later)
+    _ = dm.get_ds_contents(simple_dataset.Name)
+    wait_some_time(lambda: rucio_2file_dataset_shows_up_later.CountCalled == 0)
+    status, _ = dm.get_ds_contents(simple_dataset.Name)
+    assert DatasetQueryStatus.does_not_exist == status
+
+    # Query, but demand a quick re-check
+    status, _ = dm.get_ds_contents(simple_dataset.Name, maxAgeIfNotSeen=datetime.timedelta(seconds=1000))
+    assert DatasetQueryStatus.does_not_exist == status
+    assert 1 == rucio_2file_dataset_shows_up_later.CountCalled
+
+def test_good_dataset_retry(rucio_2file_dataset, cache_empty, simple_dataset):
+    'Do a requery for the dataset'
+    dm = dataset_mgr(cache_empty, rucio_mgr=rucio_2file_dataset)
+    _ = dm.get_ds_contents(simple_dataset.Name)
+    wait_some_time(lambda: rucio_2file_dataset.CountCalled == 0)
+    status, _ = dm.get_ds_contents(simple_dataset.Name)
+    assert DatasetQueryStatus.results_valid == status
+
+    # Query, but demand a quick re-check
+    status, _ = dm.get_ds_contents(simple_dataset.Name, maxAge=datetime.timedelta(seconds=0))
+    assert DatasetQueryStatus.query_queued == status
+    wait_some_time(lambda: rucio_2file_dataset.CountCalled == 1)
+    status, _ = dm.get_ds_contents(simple_dataset.Name)
+    assert DatasetQueryStatus.results_valid == status
+
+    assert 2 == rucio_2file_dataset.CountCalled
+
+def test_good_dataset_longretry(rucio_2file_dataset, cache_empty, simple_dataset):
+    'Do not requery for the dataset'
+    dm = dataset_mgr(cache_empty, rucio_mgr=rucio_2file_dataset)
+    _ = dm.get_ds_contents(simple_dataset.Name)
+    wait_some_time(lambda: rucio_2file_dataset.CountCalled == 0)
+    status, _ = dm.get_ds_contents(simple_dataset.Name)
+    assert DatasetQueryStatus.results_valid == status
+
+    # Query, but demand a quick re-check
+    status, _ = dm.get_ds_contents(simple_dataset.Name, maxAge=datetime.timedelta(seconds=1000))
+    assert DatasetQueryStatus.results_valid == status
+    assert 1 == rucio_2file_dataset.CountCalled
+
+def test_good_dataset_maxAgeIfNotSeenNoEffect(rucio_2file_dataset, cache_empty, simple_dataset):
+    'Do not requery for the dataset'
+    dm = dataset_mgr(cache_empty, rucio_mgr=rucio_2file_dataset)
+    _ = dm.get_ds_contents(simple_dataset.Name)
+    wait_some_time(lambda: rucio_2file_dataset.CountCalled == 0)
+    status, _ = dm.get_ds_contents(simple_dataset.Name)
+    assert DatasetQueryStatus.results_valid == status
+
+    # Query, but demand a quick re-check
+    status, _ = dm.get_ds_contents(simple_dataset.Name, maxAgeIfNotSeen=datetime.timedelta(seconds=0))
+    assert DatasetQueryStatus.results_valid == status
+    assert 1 == rucio_2file_dataset.CountCalled
