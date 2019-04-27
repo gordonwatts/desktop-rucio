@@ -1,7 +1,7 @@
 # Test the grid certificate methods.
 
 import pytest
-from utils_for_tests import run_dummy_single, cert_good_runner, gcert
+from tests.grid.utils_for_tests import run_dummy_single, cert_good_runner, gcert
 from src.grid.cert import cert
 
 @pytest.fixture()

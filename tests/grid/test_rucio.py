@@ -1,7 +1,7 @@
 # Test out using rucio to run things
 #
 import pytest
-from utils_for_tests import run_dummy_multiple
+from tests.grid.utils_for_tests import run_dummy_multiple
 from src.grid.rucio import rucio, RucioException
 
 # Runners that respond to commands from rucio with various outputs.
