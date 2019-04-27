@@ -53,6 +53,7 @@ class dataset_cache_mgr:
         'Save a listing to the cache'
         with open(self._get_filename("cache", ds_listing.Name), 'wb') as f:
             pickle.dump(ds_listing, f)
+        self._remove_query_mark(ds_listing.Name)
 
     def get_listing(self, name) -> dataset_listing_info:
         'Return the listing. None if the listing does not exist'
@@ -61,3 +62,20 @@ class dataset_cache_mgr:
             return None
         with open(f_name, 'rb') as f:
             return pickle.load(f)
+
+    def mark_query(self, name) -> None:
+        'Mark this dataset name as having a query in progress'
+        f_name = self._get_filename("query_in_progress", name)
+        with open(f_name, 'w') as f:
+            f.write("Query marked in progress " + str(datetime.now()))
+
+    def query_in_progress(self, name) -> bool:
+        'Look for the query in progress marker for this dataset'
+        f_name = self._get_filename("query_in_progress", name)
+        return os.path.exists(f_name)
+
+    def _remove_query_mark(self, name) -> None:
+        f_name = self._get_filename("query_in_progress", name)
+        if os.path.exists(f_name):
+            os.unlink(f_name)
+

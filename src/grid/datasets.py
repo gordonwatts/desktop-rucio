@@ -65,6 +65,13 @@ class dataset_mgr:
         if listing is not None:
             status = DatasetQueryStatus.results_valid if listing.FileList is not None else DatasetQueryStatus.does_not_exist
             return (status, listing.FileList)
+
+        # Need to write something into the cache that indicates we are working on getting this query back.
+        # TODO: Fix race condition - if two threads are looking at the same thing, both might generate a rucio query
+        # unless this code above and here is protected.
+        if self._cache_mgr.query_in_progress(ds_name):
+            return (DatasetQueryStatus.query_queued, None)
+        self._cache_mgr.mark_query(ds_name)
             
         # Queue up run against rucio to find out what is in this dataset.
         self._exe.submit(dataset_mgr.query_rucio, self, ds_name)

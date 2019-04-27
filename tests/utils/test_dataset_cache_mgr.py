@@ -43,3 +43,15 @@ def test_ds_empty(local_cache, nonexistant_dataset):
     local_cache.save_listing(nonexistant_dataset)
     ds_back = local_cache.get_listing(nonexistant_dataset.Name)
     assert None is ds_back.FileList
+
+def test_ds_marked_as_query(local_cache):
+    local_cache.mark_query("dataset1")
+    assert local_cache.query_in_progress("dataset1")
+
+def test_ds_not_marked_as_query(local_cache):
+    assert not local_cache.query_in_progress("dataset1")
+
+def test_ds_query_mark_reset(local_cache, simple_dataset):
+    local_cache.mark_query(simple_dataset.Name)
+    local_cache.save_listing(simple_dataset)
+    assert not local_cache.query_in_progress(simple_dataset.Name)

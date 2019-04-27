@@ -23,6 +23,22 @@ def rucio_2file_dataset(simple_dataset):
     return rucio_dummy(simple_dataset)
 
 @pytest.fixture()
+def rucio_2file_dataset_take_time(simple_dataset):
+    class rucio_dummy:
+        def __init__(self, ds):
+            self._ds = ds
+            self.CountCalled = 0
+
+        def get_file_listing(self, ds_name):
+            sleep(0.005)
+            self.CountCalled += 1
+            if ds_name == self._ds.Name:
+                return self._ds.FileList
+            return None
+
+    return rucio_dummy(simple_dataset)
+
+@pytest.fixture()
 def rucio_2file_dataset_with_fails(simple_dataset):
     class rucio_dummy:
         def __init__(self, ds):
@@ -45,6 +61,7 @@ def cache_empty():
     class cache_good_dummy():
         def __init__(self):
             self._ds_list = {}
+            self._in_progress = []
 
         def get_listing(self, ds_name):
             if ds_name in self._ds_list:
@@ -53,6 +70,13 @@ def cache_empty():
 
         def save_listing(self, ds_info):
             self._ds_list[ds_info.Name] = ds_info
+            self._in_progress.remove(ds_info.Name)
+
+        def mark_query(self, ds_name):
+            self._in_progress.append(ds_name)
+        def query_in_progress(self, ds_name):
+            return ds_name in self._in_progress
+        
 
     return cache_good_dummy()
 
@@ -120,18 +144,26 @@ def test_look_for_good_dataset_that_fails_a_bunch(rucio_2file_dataset_with_fails
     assert DatasetQueryStatus.results_valid == status
     assert 5 == rucio_2file_dataset_with_fails.CountCalled
 
-# def test_two_queries_for_good_dataset():
-#     'Make sure second query does not trigger second web download'
-#     dm = dataset_mgr(ds_mgr)
-#     _ = dm.get_ds_contents(simple_dataset.Name)
-#     _ = dm.get_ds_contents(simple_dataset.Name)
-#     # Now, make sure that only one query occurred.
-#     assert False
+def test_two_queries_for_good_dataset(rucio_2file_dataset_take_time, cache_empty, simple_dataset):
+    'Make sure second query does not trigger second web download'
+    # Query twice, make sure we don't forget as we are doing this!
+    dm = dataset_mgr(cache_empty, rucio_mgr=rucio_2file_dataset_take_time)
+    _ = dm.get_ds_contents(simple_dataset.Name)
+    status, _ = dm.get_ds_contents(simple_dataset.Name)
+    assert DatasetQueryStatus.query_queued == status
+
+    # Wait for the dataset query to run
+    wait_some_time(lambda: rucio_2file_dataset_take_time.CountCalled == 0)
+
+    # Now, make sure that we get back what we want here.
+    status, _ = dm.get_ds_contents(simple_dataset.Name)
+    assert DatasetQueryStatus.results_valid == status
+
+    # Make sure we didn't re-query for this, and the expiration date is not set.
+    # Make sure to wait long enough for other timing stuff above to fall apart.
+    sleep(0.02)
+    assert 1 == rucio_2file_dataset_take_time.CountCalled
 
 # def test_query_for_bad_dataset_retrigger():
 #     'After a bad dataset has aged, automatically queue a new query'
-#     assert False
-
-# def test_ask_non_query_dataset():
-#     'Ask for a dataset we have not sent in a query for'
 #     assert False
