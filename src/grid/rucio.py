@@ -2,6 +2,7 @@
 from src.utils.runner import runner
 import re
 from collections import namedtuple
+from typing import Optional
 
 # tag for a single file. Contains the name, the size (in bytes), and the number of events
 RucioFile = namedtuple('RucioFile', 'filename size events')
@@ -33,7 +34,7 @@ class rucio:
         '''
         self._runner = executor if executor is not None else runner()
 
-    def get_file_listing(self, ds_name, log_func = None):
+    def get_file_listing(self, ds_name, log_func = None) -> Optional[RucioFile]:
         '''
         Return a list of files in the data set name.
 

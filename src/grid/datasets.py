@@ -6,6 +6,7 @@ from typing import List, Optional, Tuple
 import datetime
 from enum import Enum
 from concurrent.futures import ThreadPoolExecutor, wait
+from time import sleep
 
 DatasetQueryStatus = Enum('DatasetQueryStatus', 'does_not_exist, query_queued, results_valid')
 
@@ -17,7 +18,7 @@ class dataset_mgr:
 
     We do nothing with synced datasets!
     '''
-    def __init__(self, data_mgr:dataset_cache_mgr, rucio_mgr: Optional[rucio] = None):
+    def __init__(self, data_mgr:dataset_cache_mgr, rucio_mgr: Optional[rucio] = None, seconds_between_retries:float=60.0*5):
         '''
         Setup a dataset_mgr
 
@@ -25,9 +26,10 @@ class dataset_mgr:
         rucio_mgr           Interface to query rucio directly to get back dataset file results.
         '''
         # We want to query rucio one dataset at a time.
-        self._exe = ThreadPoolExecutor(max_workers=5)
+        self._exe = ThreadPoolExecutor(max_workers=1)
         self._rucio = rucio_mgr if rucio_mgr is not None else rucio()
         self._cache_mgr = data_mgr
+        self._seconds_between_retries = seconds_between_retries
 
     def get_ds_contents(self, ds_name: str, maxAge: Optional[datetime.timedelta] = None, maxAgeIfNotSeen: Optional[datetime.timedelta] = None) -> Tuple[DatasetQueryStatus, Optional[List[RucioFile]]]:
         '''
@@ -65,16 +67,33 @@ class dataset_mgr:
             return (status, listing.FileList)
             
         # Queue up run against rucio to find out what is in this dataset.
-        f = self._exe.submit(dataset_mgr.query_rucio, self, ds_name)
+        self._exe.submit(dataset_mgr.query_rucio, self, ds_name)
 
         # Return the fact that the query has been queued.
         return (DatasetQueryStatus.query_queued, None)
 
-    def query_rucio(self, ds_name:str):
+    def query_rucio(self, ds_name:str, seconds_to_wait:float=None) -> None:
         '''
         Run a query against rucio and then save the results.
+
+        Arguments
+        ds_name         The name of the dataset we should fetch
+        seconds_to_wait How many seconds to wait before we re-try this guy
         '''
-        r = self._rucio.get_file_listing(ds_name)
-        # If the dataset doesn't exist, then we need to set the expiration time.
-        expire = (datetime.datetime.now() + datetime.timedelta(minutes=60)) if r is None else None
-        self._cache_mgr.save_listing(dataset_listing_info(ds_name, expire, r))
+        # If we should wait before we re-try
+        if seconds_to_wait is not None:
+            sleep(seconds_to_wait)
+
+        try:
+            r = self._rucio.get_file_listing(ds_name)
+            # If the dataset doesn't exist, then we need to set the expiration time.
+            expire = (datetime.datetime.now() + datetime.timedelta(minutes=60)) if r is None else None
+
+            # Cache the result.
+            self._cache_mgr.save_listing(dataset_listing_info(ds_name, expire, r))
+        except BaseException as e:
+            # If this is an exception that tells us to re-try, then we need to "requeue" ourselves.
+            if "Try again" in str(e):
+                self._exe.submit(dataset_mgr.query_rucio, self, ds_name, seconds_to_wait=self._seconds_between_retries)
+            else:
+                raise

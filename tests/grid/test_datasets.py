@@ -23,6 +23,23 @@ def rucio_2file_dataset(simple_dataset):
     return rucio_dummy(simple_dataset)
 
 @pytest.fixture()
+def rucio_2file_dataset_with_fails(simple_dataset):
+    class rucio_dummy:
+        def __init__(self, ds):
+            self._ds = ds
+            self.CountCalled = 0
+
+        def get_file_listing(self, ds_name):
+            self.CountCalled += 1
+            if self.CountCalled < 5:
+                raise BaseException("Please Try again Due To Internet Being Out")
+            if ds_name == self._ds.Name:
+                return self._ds.FileList
+            return None
+
+    return rucio_dummy(simple_dataset)
+
+@pytest.fixture()
 def cache_empty():
     'Create an empty cache that will save anything saved in it.'
     class cache_good_dummy():
@@ -89,13 +106,19 @@ def test_query_for_bad_dataset(rucio_2file_dataset, cache_empty, simple_dataset)
     info = cache_empty.get_listing('bogus_ds')
     assert (datetime.datetime.now() + datetime.timedelta(minutes=60)) == info.Expiration
 
-# def test_look_for_good_dataset_that_fails_a_bunch(ds_mgr, simple_dataset):
-#     'Queue and look for a good dataset that takes a few queries to show up with results'
-#     dm = dataset_mgr(ds_mgr)
-#     _ = dm.get_ds_contents(simple_dataset.Name)
-#     # Wait for the dataset query to run
-#     # Done, check to make sure that it retried the right number of times
-#     assert False
+def test_look_for_good_dataset_that_fails_a_bunch(rucio_2file_dataset_with_fails, cache_empty, simple_dataset):
+    'Queue and look for a good dataset that takes a few queries to show up with results'
+    dm = dataset_mgr(cache_empty, rucio_mgr=rucio_2file_dataset_with_fails, seconds_between_retries=0.01)
+    _ = dm.get_ds_contents(simple_dataset.Name)
+
+    # Wait for the dataset query to run
+    wait_some_time(lambda: rucio_2file_dataset_with_fails.CountCalled < 5)
+
+    # Now, make sure that we get back what we want and that the number of tries matches what we think
+    # it should have.
+    status, files = dm.get_ds_contents(simple_dataset.Name)
+    assert DatasetQueryStatus.results_valid == status
+    assert 5 == rucio_2file_dataset_with_fails.CountCalled
 
 # def test_two_queries_for_good_dataset():
 #     'Make sure second query does not trigger second web download'
