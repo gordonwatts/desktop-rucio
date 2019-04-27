@@ -10,4 +10,5 @@ source ./setup.sh
 python3 cert_manager.py &
 
 # The web server. Note that we don't run it in the background.
-hug -f src/api.py
+mkdir -p /tmp/desktop-rucio-logs
+stdbuf -o0 hug -f src/api.py &> /tmp/desktop-rucio-logs/web_server.log
