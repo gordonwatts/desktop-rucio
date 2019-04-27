@@ -1,29 +1,99 @@
 # Test out everything with datasets.
 
-from src.grid.datasets import dataset_mgr
+from src.grid.datasets import dataset_mgr, DatasetQueryStatus
+from tests.grid.utils_for_tests import simple_dataset
+from time import sleep
 
 import pytest
 
-def test_look_for_good_dataset():
-    'Queue and look for a good dataset'
-    assert False
+@pytest.fixture()
+def rucio_2file_dataset(simple_dataset):
+    class rucio_dummy:
+        def __init__(self, ds):
+            self._ds = ds
+            self.CountCalled = 0
 
-def test_look_for_good_dataset_that_takes_time():
-    'Queue and look for a good dataset that takes a few queries to show up with results'
-    assert False
+        def get_file_listing(self, ds_name):
+            self.CountCalled += 1
+            if ds_name == self._ds.Name:
+                return self._ds.FileList
+            return None
 
-def test_two_queries_for_good_dataset():
-    'Make sure second query does not trigger second web download'
-    assert False
+    return rucio_dummy(simple_dataset)
 
-def test_query_for_bad_dataset():
-    'Ask for a bad dataset, and get back a null'
-    assert False
+@pytest.fixture()
+def cache_empty():
+    'Create an empty cache that will save anything saved in it.'
+    class cache_good_dummy():
+        def __init__(self):
+            self._ds_list = {}
 
-def test_query_for_bad_dataset_retrigger():
-    'After a bad dataset has aged, automatically queue a new query'
-    assert False
+        def get_listing(self, ds_name):
+            if ds_name in self._ds_list:
+                return self._ds_list[ds_name]
+            return None
 
-def test_ask_non_query_dataset():
-    'Ask for a dataset we have not sent in a query for'
-    assert False
+        def save_listing(self, ds_info):
+            self._ds_list[ds_info.Name] = ds_info
+
+    return cache_good_dummy()
+
+def test_dataset_query_queued(rucio_2file_dataset, cache_empty):
+    'Queue a dataset'
+    dm = dataset_mgr(cache_empty, rucio_mgr=rucio_2file_dataset)
+    status, files = dm.get_ds_contents('a_dataset')
+
+    # Should have queued the result since this was a new ds manager
+    assert status == DatasetQueryStatus.query_queued
+    assert None is files
+
+def wait_some_time(check):
+    'Simple method to wait until check returns false. Will wait up to about a second so as not to delay things before throwing an assert.'
+    counter = 0
+    while check():
+        sleep(0.01)
+        counter += 1
+        assert counter < 100
+
+def test_dataset_query_resolved(rucio_2file_dataset, cache_empty, simple_dataset):
+    'Queue and look for a dataset query result'
+    dm = dataset_mgr(cache_empty, rucio_mgr=rucio_2file_dataset)
+    _ = dm.get_ds_contents(simple_dataset.Name)
+
+    # Wait for the dataset query to run
+    wait_some_time(lambda: rucio_2file_dataset.CountCalled == 0)
+
+    # Now, make sure that we get back what we want here.
+    status, files = dm.get_ds_contents(simple_dataset.Name)
+    assert DatasetQueryStatus.results_valid == status
+    assert len(simple_dataset.FileList) == len(files)
+
+# def test_query_for_bad_dataset():
+#     'Ask for a bad dataset, and get back a null'
+#     dm = dataset_mgr(ds_mgr)
+#     _ = dm.get_ds_contents(simple_dataset.Name)
+#     assert False
+
+# def test_look_for_good_dataset_that_fails_a_bunch(ds_mgr, simple_dataset):
+#     'Queue and look for a good dataset that takes a few queries to show up with results'
+#     dm = dataset_mgr(ds_mgr)
+#     _ = dm.get_ds_contents(simple_dataset.Name)
+#     # Wait for the dataset query to run
+#     # Done, check to make sure that it retried the right number of times
+#     assert False
+
+# def test_two_queries_for_good_dataset():
+#     'Make sure second query does not trigger second web download'
+#     dm = dataset_mgr(ds_mgr)
+#     _ = dm.get_ds_contents(simple_dataset.Name)
+#     _ = dm.get_ds_contents(simple_dataset.Name)
+#     # Now, make sure that only one query occurred.
+#     assert False
+
+# def test_query_for_bad_dataset_retrigger():
+#     'After a bad dataset has aged, automatically queue a new query'
+#     assert False
+
+# def test_ask_non_query_dataset():
+#     'Ask for a dataset we have not sent in a query for'
+#     assert False

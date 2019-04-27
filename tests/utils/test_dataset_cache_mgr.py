@@ -2,6 +2,7 @@
 
 from src.utils.dataset_cache_mgr import dataset_cache_mgr, dataset_listing_info
 from src.grid.rucio import RucioFile
+from tests.grid.utils_for_tests import simple_dataset
 import pytest
 import tempfile
 import shutil
@@ -16,13 +17,6 @@ def local_cache():
     os.mkdir(loc)
     yield dataset_cache_mgr(location=loc)
     shutil.rmtree(loc)
-
-@pytest.fixture()
-def simple_dataset():
-    'Create a simple dataset with 2 files in it and no expiration'
-    f1 = RucioFile('f1.root', 100, 1)
-    f2 = RucioFile('f2.root', 200, 2)
-    return dataset_listing_info('dataset1', None, [f1, f2])
 
 def test_dataset_cache_mgr_ctor():
     dataset_cache_mgr()

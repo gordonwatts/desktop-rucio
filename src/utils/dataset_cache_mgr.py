@@ -5,7 +5,7 @@
 
 from datetime import datetime
 from src.grid.rucio import RucioFile
-from typing import List
+from typing import List, Optional
 import os
 import tempfile
 import json
@@ -15,7 +15,7 @@ class dataset_listing_info:
     '''
     Simple object that contains a list of files in the dataset
     '''
-    def __init__ (self, name: str, expiration:datetime, files: List[RucioFile]):
+    def __init__ (self, name: str, expiration: Optional[datetime], files: List[RucioFile]):
         '''
         Initialize a dataset file listing.
 
@@ -49,12 +49,12 @@ class dataset_cache_mgr:
             os.mkdir(d)
         return "{d}/{fname_stub}.pickle".format(**locals())
 
-    def save_listing (self, ds_listing: dataset_listing_info):
+    def save_listing (self, ds_listing: dataset_listing_info) -> None:
         'Save a listing to the cache'
         with open(self._get_filename("cache", ds_listing.Name), 'wb') as f:
             pickle.dump(ds_listing, f)
 
-    def get_listing(self, name):
+    def get_listing(self, name) -> dataset_listing_info:
         'Return the listing. None if the listing does not exist'
         f_name = self._get_filename("cache", name)
         if not os.path.exists(f_name):

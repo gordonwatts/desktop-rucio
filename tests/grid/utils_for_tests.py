@@ -2,6 +2,8 @@
 
 from src.grid.cert import cert
 from src.utils.runner import exe_result
+from src.grid.rucio import RucioFile
+from src.utils.dataset_cache_mgr import dataset_listing_info
 import pytest
 
 class dummy_logger:
@@ -78,3 +80,11 @@ def cert_good_runner():
               '',
               'Your proxy is valid until Mon Apr 22 10:20:03 UTC 2019]']
     yield run_dummy_single(0, lines)
+
+# A simple dataset for use in testing.
+@pytest.fixture()
+def simple_dataset():
+    'Create a simple dataset with 2 files in it and no expiration'
+    f1 = RucioFile('f1.root', 100, 1)
+    f2 = RucioFile('f2.root', 200, 2)
+    return dataset_listing_info('dataset1', None, [f1, f2])
