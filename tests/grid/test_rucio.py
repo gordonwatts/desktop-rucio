@@ -98,3 +98,7 @@ def test_no_cert(rucio_no_cert):
         assert "Try again" in str(e)
         return
     assert False
+
+def test_logging():
+    'Make sure we are logging everything'
+    assert False
