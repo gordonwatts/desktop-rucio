@@ -5,6 +5,7 @@ from src.utils.runner import exe_result
 from src.grid.rucio import RucioFile
 from src.utils.dataset_cache_mgr import dataset_listing_info
 import pytest
+from datetime import timedelta
 
 class dummy_logger:
     def __init__(self):
@@ -88,3 +89,13 @@ def simple_dataset():
     f1 = RucioFile('f1.root', 100, 1)
     f2 = RucioFile('f2.root', 200, 2)
     return dataset_listing_info('dataset1', None, [f1, f2])
+
+@pytest.fixture()
+def empty_dataset():
+    'Create a simple dataset with 2 files in it and no expiration'
+    return dataset_listing_info('dataset1', None, [])
+
+@pytest.fixture()
+def nonexistant_dataset():
+    'Create a simple dataset with 2 files in it and no expiration'
+    return dataset_listing_info('dataset1', timedelta(minutes=60), None)

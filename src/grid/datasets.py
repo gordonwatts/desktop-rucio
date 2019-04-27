@@ -3,12 +3,11 @@
 from src.grid.rucio import RucioFile, rucio
 from src.utils.dataset_cache_mgr import dataset_cache_mgr, dataset_listing_info
 from typing import List, Optional, Tuple
-from datetime import timedelta
+import datetime
 from enum import Enum
 from concurrent.futures import ThreadPoolExecutor, wait
 
-DatasetQueryStatus = Enum('DatasetQueryStatus',
-                          'does_not_exist, query_queued, results_valid')
+DatasetQueryStatus = Enum('DatasetQueryStatus', 'does_not_exist, query_queued, results_valid')
 
 
 class dataset_mgr:
@@ -30,10 +29,13 @@ class dataset_mgr:
         self._rucio = rucio_mgr if rucio_mgr is not None else rucio()
         self._cache_mgr = data_mgr
 
-    def get_ds_contents(self, ds_name: str, maxAge: Optional[timedelta] = None, maxAgeIfNotSeen: Optional[timedelta] = None) -> Tuple[DatasetQueryStatus, Optional[List[RucioFile]]]:
+    def get_ds_contents(self, ds_name: str, maxAge: Optional[datetime.timedelta] = None, maxAgeIfNotSeen: Optional[datetime.timedelta] = None) -> Tuple[DatasetQueryStatus, Optional[List[RucioFile]]]:
         '''
         Return the list of files that are in a dataset if they are in our local cache. If not, then queue a query to
         rucio to get the actual file contents. The results have age checks, which will trigger a re-query.
+
+        If the dataset does not exist on the grid, it will be placed into our local cache, but given a 1 hour expiration
+        time (so in an hour you can re-query and it will automatically re-query rucio).
 
         Arguments
         name              The rucio fully qualified name of the dataset
@@ -59,7 +61,8 @@ class dataset_mgr:
         # See if the listing exists, if so, return it.
         listing = self._cache_mgr.get_listing(ds_name)
         if listing is not None:
-            return (DatasetQueryStatus.results_valid, listing.FileList)
+            status = DatasetQueryStatus.results_valid if listing.FileList is not None else DatasetQueryStatus.does_not_exist
+            return (status, listing.FileList)
             
         # Queue up run against rucio to find out what is in this dataset.
         f = self._exe.submit(dataset_mgr.query_rucio, self, ds_name)
@@ -72,4 +75,6 @@ class dataset_mgr:
         Run a query against rucio and then save the results.
         '''
         r = self._rucio.get_file_listing(ds_name)
-        self._cache_mgr.save_listing(dataset_listing_info(ds_name, None, r))
+        # If the dataset doesn't exist, then we need to set the expiration time.
+        expire = (datetime.datetime.now() + datetime.timedelta(minutes=60)) if r is None else None
+        self._cache_mgr.save_listing(dataset_listing_info(ds_name, expire, r))

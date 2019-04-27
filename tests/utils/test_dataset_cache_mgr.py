@@ -2,7 +2,7 @@
 
 from src.utils.dataset_cache_mgr import dataset_cache_mgr, dataset_listing_info
 from src.grid.rucio import RucioFile
-from tests.grid.utils_for_tests import simple_dataset
+from tests.grid.utils_for_tests import simple_dataset, nonexistant_dataset
 import pytest
 import tempfile
 import shutil
@@ -39,3 +39,7 @@ def test_ds_listing_roundtrip(local_cache, simple_dataset):
 def test_ds_listing_cache_miss(local_cache):
     assert None is local_cache.get_listing("bogus_name")
 
+def test_ds_empty(local_cache, nonexistant_dataset):
+    local_cache.save_listing(nonexistant_dataset)
+    ds_back = local_cache.get_listing(nonexistant_dataset.Name)
+    assert None is ds_back.FileList

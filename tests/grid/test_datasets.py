@@ -3,6 +3,7 @@
 from src.grid.datasets import dataset_mgr, DatasetQueryStatus
 from tests.grid.utils_for_tests import simple_dataset
 from time import sleep
+import datetime
 
 import pytest
 
@@ -68,11 +69,25 @@ def test_dataset_query_resolved(rucio_2file_dataset, cache_empty, simple_dataset
     assert DatasetQueryStatus.results_valid == status
     assert len(simple_dataset.FileList) == len(files)
 
-# def test_query_for_bad_dataset():
-#     'Ask for a bad dataset, and get back a null'
-#     dm = dataset_mgr(ds_mgr)
-#     _ = dm.get_ds_contents(simple_dataset.Name)
-#     assert False
+    # Make sure we didn't re-query for this, and the expiration date is not set.
+    assert 1 == rucio_2file_dataset.CountCalled == 1
+    info = cache_empty.get_listing(simple_dataset.Name)
+    assert None is info.Expiration
+
+def test_query_for_bad_dataset(rucio_2file_dataset, cache_empty, simple_dataset):
+    'Ask for a bad dataset, and get back a null'
+    dm = dataset_mgr(cache_empty, rucio_mgr=rucio_2file_dataset)
+    _ = dm.get_ds_contents('bogus_ds')
+    wait_some_time(lambda: rucio_2file_dataset.CountCalled == 0)
+
+    # Make sure it comes back as bad.
+    status, files = dm.get_ds_contents('bogus_ds')
+    assert DatasetQueryStatus.does_not_exist == status
+    assert None is files
+
+    # Make sure that a timeout of an hour has been set on the dataset.
+    info = cache_empty.get_listing('bogus_ds')
+    assert (datetime.datetime.now() + datetime.timedelta(minutes=60)) == info.Expiration
 
 # def test_look_for_good_dataset_that_fails_a_bunch(ds_mgr, simple_dataset):
 #     'Queue and look for a good dataset that takes a few queries to show up with results'
