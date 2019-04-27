@@ -8,7 +8,7 @@ class runner:
     def __init__(self):
         pass
     
-    def shell_execute(self, shell_command, log_func = None):
+    def shell_execute(self, shell_command, log_func = None) -> exe_result:
         '''
         Run in the default command shell, synchronously.
 
