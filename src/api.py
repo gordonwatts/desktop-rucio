@@ -2,6 +2,7 @@
 import hug
 import src.controllers.status
 import src.controllers.logs
+import src.controllers.dsfiles
 
 @hug.get('/')
 def say_hi():
@@ -9,4 +10,8 @@ def say_hi():
 
 @hug.extend_api()
 def with_other_apis():
-    return [src.controllers.status, src.controllers.logs]
+    return [
+        src.controllers.status,
+        src.controllers.logs,
+        src.controllers.dsfiles
+        ]
