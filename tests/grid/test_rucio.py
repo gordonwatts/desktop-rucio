@@ -205,9 +205,18 @@ def test_download_bad_ds(rucio_bad_ds_download):
     res = r.download_files("mc16_13TeV.311309.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS5_ltlow.deriv.DAOD_EXOT15.e7270_e5984_s3234_r10201_r10210_p3795dude", '/data')
     assert None is res
 
+def test_download_bad_cert(rucio_no_cert_download):
+    try:
+        r = rucio(executor=rucio_no_cert_download)
+        r.download_files("mc16_13TeV.311309.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS5_ltlow.deriv.DAOD_EXOT15.e7270_e5984_s3234_r10201_r10210_p3795", '/data')
+        assert False
+    except RucioException:
+        return
+    assert False
+
 # Test downloads:
+# TODO:
 #   - limit them to 3 at a time or similar (?)
-#   - deal with bad cert
 #   - deal with bad internet
 #   - Deal with being asked twice
 #   - Status v1.0 should be what is getting downloaded - and how many queue/active there are.

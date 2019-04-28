@@ -91,5 +91,9 @@ class rucio:
                     files.append(m.group("file_name"))
             return files
         
-        # We failed. Time to figure out why and return th proper type of error.
-        return None
+        # We failed. Time to figure out why and return the proper type of error.
+        for l in r.shell_output:
+            print ("->" + l)
+        if any("Using main thread to download 0 file" in l for l in r.shell_output):
+            return None
+        raise RucioException("Rucio failed with exit code {0}.".format(r.shell_result))
