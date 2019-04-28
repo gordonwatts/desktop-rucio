@@ -12,9 +12,15 @@ class runner:
         '''
         Run in the default command shell, synchronously.
 
-        Arguments:
-        shell_command       The shell command to run
-        logger              Log the lines in real time.
+        Args:
+            shell_command       The shell command to run
+            logger              Log the lines in real time.
+
+        Returns:
+            exe_result:         (shell_result,shell_status,shell_output)
+                                shell_result is the exit code
+                                shell_status is True if the exit code is 0
+                                shell_output are the stdout/stderr lines
         '''
         lines = []
         with Popen(shell_command, shell=True, stdout=PIPE, stderr=STDOUT, bufsize=1, universal_newlines=True) as p:
