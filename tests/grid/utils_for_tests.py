@@ -6,6 +6,7 @@ from src.grid.rucio import RucioFile
 from src.utils.dataset_cache_mgr import dataset_listing_info
 import pytest
 from datetime import timedelta
+from time import sleep
 
 class dummy_logger:
     def __init__(self):
@@ -19,7 +20,6 @@ class dummy_logger:
     def log(self, name, line):
         self.name = name
         self.lines.append(line)
-
 
 class dummy_status:
     def __init__ (self):
@@ -35,6 +35,11 @@ class dummy_status:
 
     def is_good(self):
         return self._dict['is_good']
+
+    def status_value(self, name, sub_name):
+        if name == self._name and sub_name in self._dict:
+            return self._dict[sub_name]
+        return None
 
 @pytest.fixture()
 def gcert():
@@ -54,7 +59,20 @@ class run_dummy_single:
 class run_dummy_multiple:
     '''Enable a conversation band and forth'''
     def __init__(self, responses):
+        '''
+        Build a runner
+
+        Args:
+            responses:      Dictionary of responses keyed by command names.
+                            The response are dictionaries that contain the following keys:
+                                shell_output: Array of lines. Single entries with multiple lines are split.
+                                shell_result: The exit_code
+                                delay: Option, number of seconds it should take to run this command.
+
+        '''
         self._responses = responses
+        self.Running = False
+        self.ExecutionCount = 0
 
     def shell_execute(self, cmd, log_func = None):
         # Make sure we have the command.
@@ -63,9 +81,14 @@ class run_dummy_multiple:
         # Got it, now feed back the info in there.
         lines = [l for l_grp in self._responses[cmd]['shell_output'] for l in str.splitlines(l_grp)]
         #lines = l for l in str.splitlines(l_grp): for l_grp in self._responses[cmd]['shell_output']
+        if 'delay' in self._responses[cmd]:
+            self.Running = True
+            sleep(self._responses[cmd]['delay'])
+            self.Running = False
         if log_func is not None:
             for l in lines:
                 log_func(l)
+        self.ExecutionCount += 1
         return exe_result(self._responses[cmd]['shell_result'], self._responses[cmd]['shell_result']==0, lines)
 
 ### For help with certificate grabbing
