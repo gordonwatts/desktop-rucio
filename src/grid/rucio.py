@@ -2,7 +2,7 @@
 from src.utils.runner import runner
 import re
 from collections import namedtuple
-from typing import Optional
+from typing import Optional, List
 
 # tag for a single file. Contains the name, the size (in bytes), and the number of events
 RucioFile = namedtuple('RucioFile', 'filename size events')
@@ -34,7 +34,7 @@ class rucio:
         '''
         self._runner = executor if executor is not None else runner()
 
-    def get_file_listing(self, ds_name, log_func = None) -> Optional[RucioFile]:
+    def get_file_listing(self, ds_name, log_func = None) -> Optional[List[RucioFile]]:
         '''
         Return a list of files in the data set name.
 
@@ -62,3 +62,34 @@ class rucio:
         finder = re.compile(r"\|\s+(?P<file_name>[^|]+)\s+\|\s+(?P<guid>[^|]+)\s+\|\s+(?P<hash>[^|]+)\s+\|\s+(?P<size>[^|]+)\s+\|\s+(?P<events>[^|]+)\s+\|")
 
         return [RucioFile(m.group('file_name'), calc_size(m.group('size')), int(m.group('events'))) for m in [finder.match(l) for l in r.shell_output] if m is not None and (m.group('events') != 'EVENTS')]
+
+    def download_files(self, ds_name:str, data_dir:str, log_func = None) -> Optional[List[RucioFile]]:
+        '''
+        Download files in a dataset
+
+        Args:
+            ds_name:            The name of the dataset
+            data_dir:           Root directory where the files should be downloaded to
+            log_func:           Called with each line of output from the shell executing
+                                the download command.
+
+        Returns:
+            file_list           None if the dataset does not exist
+                                List of RucioFiles for each file that was downloaded
+
+        Raises:
+            Exception           If something went wrong that isn't either of the above  
+                                two (generally means this command needs to be retried).
+        '''
+        r = self._runner.shell_execute("cd {data_dir}; rucio download {ds_name}".format(**locals()), log_func=log_func)
+        if r.shell_status:
+            pat = re.compile(r".*File (?P<file_name>\S+) successfully downloaded.*")
+            files = []
+            for l in r.shell_output:
+                m = pat.match(l)
+                if m:
+                    files.append(m.group("file_name"))
+            return files
+        
+        # We failed. Time to figure out why and return th proper type of error.
+        return None

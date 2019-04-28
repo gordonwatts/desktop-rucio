@@ -59,6 +59,89 @@ Details: x509 authentication failed
 2019-04-24 00:42:07,065 ERROR   Please verify that your proxy is still valid and renew it if needed.'''], 'shell_result': 1}}
     yield run_dummy_multiple(responses)
 
+@pytest.fixture()
+def rucio_good_ds_download():
+    responses = {"cd /data; rucio download mc16_13TeV.311309.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS5_ltlow.deriv.DAOD_EXOT15.e7270_e5984_s3234_r10201_r10210_p3795":
+        {'shell_output': ['''bash-4.2# cd /data; rucio download mc16_13TeV.311309.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS5_ltlow.deriv.DAOD_EXOT15.e7270_e5984_s3234_r10201_r10210_p3795
+2019-04-27 23:14:27,425 INFO    Processing 1 item(s) for input
+2019-04-27 23:14:27,426 INFO    Getting sources of DIDs
+2019-04-27 23:14:28,742 INFO    Using 3 threads to download 5 files
+2019-04-27 23:14:28,744 INFO    Thread 1/3: Preparing download of mc16_13TeV:DAOD_EXOT15.17545497._000001.pool.root.1
+2019-04-27 23:14:28,748 INFO    Thread 2/3: Preparing download of mc16_13TeV:DAOD_EXOT15.17545497._000002.pool.root.1
+2019-04-27 23:14:28,751 INFO    Thread 3/3: Preparing download of mc16_13TeV:DAOD_EXOT15.17545497._000003.pool.root.1
+2019-04-27 23:14:29,432 INFO    Thread 2/3: Trying to download with root from TAIWAN-LCG2_DATADISK: mc16_13TeV:DAOD_EXOT15.17545497._000002.pool.root.1 
+2019-04-27 23:14:29,482 INFO    Thread 3/3: Trying to download with root from TAIWAN-LCG2_DATADISK: mc16_13TeV:DAOD_EXOT15.17545497._000003.pool.root.1 
+2019-04-27 23:14:29,484 INFO    Thread 1/3: Trying to download with root from TAIWAN-LCG2_DATADISK: mc16_13TeV:DAOD_EXOT15.17545497._000001.pool.root.1 
+2019-04-28 00:02:09,137 INFO    Thread 1/3: File mc16_13TeV:DAOD_EXOT15.17545497._000001.pool.root.1 successfully downloaded. 2.011 GB in 2828.17 seconds = 0.71 MBps
+2019-04-28 00:02:09,139 INFO    Thread 1/3: Preparing download of mc16_13TeV:DAOD_EXOT15.17545497._000004.pool.root.1
+2019-04-28 00:02:09,834 INFO    Thread 1/3: Trying to download with gsiftp from SWT2_CPB_DATADISK: mc16_13TeV:DAOD_EXOT15.17545497._000004.pool.root.1 
+2019-04-28 00:02:11,968 WARNING Thread 1/3: Download attempt failed. Try 1/2
+2019-04-28 00:02:13,614 WARNING Thread 1/3: Download attempt failed. Try 2/2
+2019-04-28 00:02:14,346 INFO    Thread 1/3: Trying to download with root from TAIWAN-LCG2_DATADISK: mc16_13TeV:DAOD_EXOT15.17545497._000004.pool.root.1 
+2019-04-28 00:02:19,178 INFO    Thread 3/3: File mc16_13TeV:DAOD_EXOT15.17545497._000003.pool.root.1 successfully downloaded. 2.019 GB in 2839.03 seconds = 0.71 MBps
+2019-04-28 00:02:19,179 INFO    Thread 3/3: Preparing download of mc16_13TeV:DAOD_EXOT15.17545497._000005.pool.root.1
+2019-04-28 00:02:19,179 INFO    Thread 3/3: Trying to download with root from TAIWAN-LCG2_DATADISK: mc16_13TeV:DAOD_EXOT15.17545497._000005.pool.root.1 
+2019-04-28 00:03:07,137 INFO    Thread 2/3: File mc16_13TeV:DAOD_EXOT15.17545497._000002.pool.root.1 successfully downloaded. 2.010 GB in 2893.48 seconds = 0.69 MBps
+2019-04-28 00:32:19,792 INFO    Thread 1/3: File mc16_13TeV:DAOD_EXOT15.17545497._000004.pool.root.1 successfully downloaded. 2.012 GB in 1793.79 seconds = 1.12 MBps
+2019-04-28 00:34:12,348 INFO    Thread 3/3: File mc16_13TeV:DAOD_EXOT15.17545497._000005.pool.root.1 successfully downloaded. 2.018 GB in 1901.95 seconds = 1.06 MBps
+----------------------------------
+Download summary
+----------------------------------------
+DID mc16_13TeV:mc16_13TeV.311309.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS5_ltlow.deriv.DAOD_EXOT15.e7270_e5984_s3234_r10201_r10210_p3795
+Total files :                                 5
+Downloaded files :                            5
+Files already found locally :                 0
+Files that cannot be downloaded :             0'''], 'shell_result':0}}
+    yield run_dummy_multiple(responses)
+
+@pytest.fixture()
+def rucio_no_cert_download():
+    responses = {"cd /data; rucio download mc16_13TeV.311309.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS5_ltlow.deriv.DAOD_EXOT15.e7270_e5984_s3234_r10201_r10210_p3795":
+        {'shell_output': ['''bash-4.2# cd /data; rucio download mc16_13TeV.311309.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS5_ltlow.deriv.DAOD_EXOT15.e7270_e5984_s3234_r10201_r10210_p3795
+2019-04-28 00:38:26,690 INFO    Processing 1 item(s) for input
+2019-04-28 00:38:26,690 INFO    Getting sources of DIDs
+given client cert (/usr/usercertfile) doesn't exist
+2019-04-28 00:38:27,699 ERROR   Cannot authenticate.
+Details: x509 authentication failed'''], 'shell_result':4}}
+    yield run_dummy_multiple(responses)
+
+@pytest.fixture()
+def rucio_bad_ds_download():
+    responses = {"cd /data; rucio download mc16_13TeV.311309.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS5_ltlow.deriv.DAOD_EXOT15.e7270_e5984_s3234_r10201_r10210_p3795dude":
+        {'shell_output': ['''bash-4.2# cd /data; rucio download mc16_13TeV.311309.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS5_ltlow.deriv.DAOD_EXOT15.e7270_e5984_s3234_r10201_r10210_p3795dude
+2019-04-28 00:39:38,134 INFO    Processing 1 item(s) for input
+2019-04-28 00:39:38,134 INFO    Getting sources of DIDs
+2019-04-28 00:39:43,830 INFO    Using main thread to download 0 file(s)
+2019-04-28 00:39:43,831 ERROR   None of the requested files have been downloaded.'''], 'shell_result':75}}
+    yield run_dummy_multiple(responses)
+
+@pytest.fixture()
+def rucio_good_ds_redownload():
+    responses = {"cd /data; rucio download mc16_13TeV.311309.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS5_ltlow.deriv.DAOD_EXOT15.e7270_e5984_s3234_r10201_r10210_p3795dude":
+        {'shell_output': ['''bash-4.2# cd /data; rucio download mc16_13TeV.311309.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS5_ltlow.deriv.DAOD_EXOT15.e7270_e5984_s3234_r10201_r10210_p3795    
+2019-04-28 00:42:29,370 INFO    Processing 1 item(s) for input
+2019-04-28 00:42:29,370 INFO    Getting sources of DIDs
+2019-04-28 00:42:30,617 INFO    Using 3 threads to download 5 files
+2019-04-28 00:42:30,619 INFO    Thread 1/3: Preparing download of mc16_13TeV:DAOD_EXOT15.17545497._000001.pool.root.1
+2019-04-28 00:42:30,620 INFO    Thread 1/3: File exists already locally: mc16_13TeV:DAOD_EXOT15.17545497._000001.pool.root.1
+2019-04-28 00:42:30,626 INFO    Thread 2/3: Preparing download of mc16_13TeV:DAOD_EXOT15.17545497._000002.pool.root.1
+2019-04-28 00:42:30,628 INFO    Thread 2/3: File exists already locally: mc16_13TeV:DAOD_EXOT15.17545497._000002.pool.root.1
+2019-04-28 00:42:30,628 INFO    Thread 3/3: Preparing download of mc16_13TeV:DAOD_EXOT15.17545497._000003.pool.root.1
+2019-04-28 00:42:30,629 INFO    Thread 3/3: File exists already locally: mc16_13TeV:DAOD_EXOT15.17545497._000003.pool.root.1
+2019-04-28 00:42:31,310 INFO    Thread 1/3: Preparing download of mc16_13TeV:DAOD_EXOT15.17545497._000004.pool.root.1
+2019-04-28 00:42:31,311 INFO    Thread 1/3: File exists already locally: mc16_13TeV:DAOD_EXOT15.17545497._000004.pool.root.1
+2019-04-28 00:42:31,317 INFO    Thread 2/3: Preparing download of mc16_13TeV:DAOD_EXOT15.17545497._000005.pool.root.1
+2019-04-28 00:42:31,317 INFO    Thread 2/3: File exists already locally: mc16_13TeV:DAOD_EXOT15.17545497._000005.pool.root.1
+----------------------------------
+Download summary
+----------------------------------------
+DID mc16_13TeV:mc16_13TeV.311309.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS5_ltlow.deriv.DAOD_EXOT15.e7270_e5984_s3234_r10201_r10210_p3795
+Total files :                                 5
+Downloaded files :                            0
+Files already found locally :                 5
+Files that cannot be downloaded :             0'''], 'shell_result':75}}
+    yield run_dummy_multiple(responses)
+
 #######################
 def test_rucio_ctor():
     _ = rucio()
@@ -105,3 +188,26 @@ def test_logging(rucio_good_file_listing):
     files = r.get_file_listing("mc16_13TeV:mc16_13TeV.311313.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS35_lthigh.deriv.DAOD_EXOT15.e7270_e5984_s3234_r10724_r10726_p3795", log_func=lambda l: lines.append(l))
     assert len(lines) == 21
 
+def test_download_good_ds(rucio_good_ds_download):
+    r = rucio(executor=rucio_good_ds_download)
+    files = r.download_files("mc16_13TeV.311309.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS5_ltlow.deriv.DAOD_EXOT15.e7270_e5984_s3234_r10201_r10210_p3795", '/data')
+    assert 5 == len(files)
+
+def test_download_logging(rucio_good_ds_download):
+    r = rucio(executor=rucio_good_ds_download)
+    lines = []
+    r.download_files("mc16_13TeV.311309.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS5_ltlow.deriv.DAOD_EXOT15.e7270_e5984_s3234_r10201_r10210_p3795", '/data', log_func=lambda l: lines.append(l))
+    assert len(lines) > 10
+    assert any(['Files already found locally' in l for l in lines])
+
+def test_download_bad_ds(rucio_bad_ds_download):
+    r = rucio(executor=rucio_bad_ds_download)
+    res = r.download_files("mc16_13TeV.311309.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS5_ltlow.deriv.DAOD_EXOT15.e7270_e5984_s3234_r10201_r10210_p3795dude", '/data')
+    assert None is res
+
+# Test downloads:
+#   - limit them to 3 at a time or similar (?)
+#   - deal with bad cert
+#   - deal with bad internet
+#   - Deal with being asked twice
+#   - Status v1.0 should be what is getting downloaded - and how many queue/active there are.
