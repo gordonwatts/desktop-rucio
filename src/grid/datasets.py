@@ -164,7 +164,7 @@ class dataset_mgr:
 
         # Try again.
         try:
-            r = self._rucio.download_files(ds_name, self._cache_mgr.get_download_directory())
+            r = self._rucio.download_files(ds_name, self._cache_mgr.get_download_directory(), log_func=lambda l: self._log.log('rucio_downloader', l))
         except RucioException:
             self._downloader.submit(dataset_mgr._rucio_download, self, ds_name, seconds_to_wait=self._seconds_between_retries)
 

@@ -2,7 +2,7 @@
 
 from src.grid.datasets import dataset_mgr, DatasetQueryStatus
 from src.grid.rucio import RucioException
-from tests.grid.utils_for_tests import simple_dataset
+from tests.grid.utils_for_tests import simple_dataset, dummy_logger
 from time import sleep
 import datetime
 import os
@@ -24,9 +24,11 @@ def rucio_2file_dataset(simple_dataset):
                 return self._ds.FileList
             return None
 
-        def download_files(self, ds_name, data_dir):
+        def download_files(self, ds_name, data_dir, log_func = None):
             if self._cache_mgr is not None:
                 self._cache_mgr.add_ds(self._ds)
+            if log_func is not None:
+                log_func('downloading ' + ds_name)
             self.CountCalledDL += 1
 
 
@@ -48,7 +50,7 @@ def rucio_2file_dataset_take_time(simple_dataset):
                 return self._ds.FileList
             return None
 
-        def download_files(self, ds_name, data_dir):
+        def download_files(self, ds_name, data_dir, log_func = None):
             sleep(0.005)
             if self._cache_mgr is not None:
                 self._cache_mgr.add_ds(self._ds)
@@ -73,7 +75,7 @@ def rucio_2file_dataset_with_fails(simple_dataset):
                 return self._ds.FileList
             return None
 
-        def download_files(self, ds_name, data_dir):
+        def download_files(self, ds_name, data_dir, log_func = None):
             self.CountCalledDL += 1
             if self.CountCalledDL < 5:
                 raise RucioException("Please try again due to internet being out")
@@ -388,9 +390,23 @@ def test_dataset_download_good_ask_twice(rucio_2file_dataset_take_time, cache_em
     sleep(0.02)
     assert 1 == rucio_2file_dataset_take_time.CountCalledDL
 
+def test_dataset_download_logs(rucio_2file_dataset, cache_empty, simple_dataset):
+    'Queue a download and look for it to show up'
+    rucio_2file_dataset._cache_mgr = cache_empty
+    lg = dummy_logger()
+    dm = dataset_mgr(cache_empty, rucio_mgr=rucio_2file_dataset, logger=lg)
+    _ = dm.download_ds(simple_dataset.Name)
+
+    # Wait for the dataset query to run
+    wait_some_time(lambda: rucio_2file_dataset.CountCalledDL == 0)
+
+    # Make sure some lines were sent to the logger
+    assert len(lg.lines) > 0
 
 # Tests for downloads:
 # TODO:
 #  Make sure the download is properly logged.
+#  Make sure that if we die and restart, we pick up the downloads automatically.
+#  Same for getting the content.
 #
 #  Make sure that filenames that come back are relative to the _loc for the dataset.
