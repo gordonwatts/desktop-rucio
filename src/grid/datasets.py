@@ -131,13 +131,15 @@ class dataset_mgr:
         for d in self._cache_mgr.get_queries():
             self._downloader.submit(dataset_mgr._query_rucio, self, d)
 
-    def download_ds(self, ds_name: str) -> Tuple[DatasetQueryStatus, Optional[List[str]]]:
+    def download_ds(self, ds_name: str, do_download:bool=True) -> Tuple[DatasetQueryStatus, Optional[List[str]]]:
         '''
         Return the list of files that are in a dataset if they have been downloaded. If not, then queue a query to
         rucio to get the actual file contents.
 
         Arguments
-        ds_name       The rucio fully qualified name of the dataset
+        ds_name         The rucio fully qualified name of the dataset
+        do_download     If true, then do the download if the file isn't local. If the dataset isn't local, then
+                        return does_not_exist for the status.
 
         Returns
         status        Status of the returned results (see DatasetQueryStatus) and below:
@@ -161,6 +163,9 @@ class dataset_mgr:
         # up a fetch.
         f_list = self._cache_mgr.get_ds_contents(ds_name)
         if f_list is None:
+            if not do_download:
+                return (DatasetQueryStatus.does_not_exist, None)
+
             self._cache_mgr.mark_downloading(ds_name)
             self._downloader.submit(dataset_mgr._rucio_download, self, ds_name)
             return (DatasetQueryStatus.query_queued, None)
@@ -177,6 +182,7 @@ class dataset_mgr:
             r = self._rucio.download_files(ds_name, self._cache_mgr.get_download_directory(), log_func=lambda l: self._log.log('rucio_downloader', l))
         except RucioException:
             self._downloader.submit(dataset_mgr._rucio_download, self, ds_name, seconds_to_wait=self._seconds_between_retries)
+            return
 
         # Done, mark this as "done"
         self._cache_mgr.mark_download_done(ds_name)

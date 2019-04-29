@@ -60,6 +60,7 @@ def rucio_2file_dataset_take_time(simple_dataset):
             self.CountCalled = 0
             self.CountCalledDL = 0
             self._cache_mgr = None
+            self.DLCalled = False
 
         def get_file_listing(self, ds_name, log_func = None):
             sleep(0.005)
@@ -69,6 +70,7 @@ def rucio_2file_dataset_take_time(simple_dataset):
             return None
 
         def download_files(self, ds_name, data_dir, log_func = None):
+            self.DLCalled = True
             sleep(0.005)
             if self._cache_mgr is not None:
                 self._cache_mgr.add_ds(self._ds)
@@ -84,6 +86,7 @@ def rucio_2file_dataset_with_fails(simple_dataset):
             self.CountCalled = 0
             self.CountCalledDL = 0
             self._cache_mgr = None
+            self.DLSleep = None
 
         def get_file_listing(self, ds_name, log_func = None):
             self.CountCalled += 1
@@ -95,6 +98,8 @@ def rucio_2file_dataset_with_fails(simple_dataset):
 
         def download_files(self, ds_name, data_dir, log_func = None):
             self.CountCalledDL += 1
+            if self.DLSleep is not None:
+                sleep(self.DLSleep)
             if self.CountCalledDL < 5:
                 raise RucioException("Please try again due to internet being out")
             if self._cache_mgr is not None:
@@ -374,6 +379,14 @@ def test_dataset_download_good(rucio_2file_dataset, cache_empty, simple_dataset)
     # Make sure we didn't re-query for this.
     assert 1 == rucio_2file_dataset.CountCalledDL
 
+def test_dataset_download_good_nodownload(rucio_2file_dataset, cache_empty, simple_dataset):
+    'Queue a download and look for it to show up'
+    rucio_2file_dataset._cache_mgr = cache_empty
+    dm = dataset_mgr(cache_empty, rucio_mgr=rucio_2file_dataset)
+    status, files = dm.download_ds(simple_dataset.Name, do_download=False)
+    assert None is files
+    assert DatasetQueryStatus.does_not_exist == status
+
 def test_dataset_download_no_exist(rucio_2file_dataset, cache_empty):
     'Queue a download and look for it to show up'
     rucio_2file_dataset._cache_mgr = cache_empty
@@ -453,3 +466,22 @@ def test_dataset_download_restart(rucio_do_nothing, rucio_2file_dataset, cache_e
     status, _ = dm.download_ds(simple_dataset.Name)
 
     assert DatasetQueryStatus.results_valid == status
+
+def test_dataset_download_restart_and_marked(rucio_do_nothing, rucio_2file_dataset_with_fails, cache_empty, simple_dataset):
+    rucio_2file_dataset_with_fails._cache_mgr = cache_empty
+    rucio_2file_dataset_with_fails.DLSleep = 0.05
+
+    # Trigger the download on one.
+    dm0 = dataset_mgr(cache_empty, rucio_mgr=rucio_do_nothing)
+    _ = dm0.download_ds(simple_dataset.Name)
+    wait_some_time(lambda: rucio_do_nothing.CountCalledDL == 0)
+
+    # Next, create a second one with the same cache.
+    dm = dataset_mgr(cache_empty, rucio_mgr=rucio_2file_dataset_with_fails, seconds_between_retries=0.05)
+    wait_some_time(lambda: rucio_2file_dataset_with_fails.CountCalledDL < 2)
+    assert cache_empty.download_in_progress(simple_dataset.Name)
+
+    # wait_some_time(lambda: rucio_2file_dataset_with_fails.CountCalledDL == 0)
+    # status, _ = dm.download_ds(simple_dataset.Name)
+
+    # assert DatasetQueryStatus.results_valid == status
