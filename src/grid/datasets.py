@@ -118,12 +118,9 @@ class dataset_mgr:
             r = self._rucio.get_file_listing(ds_name, log_func=lambda l: self._log.log('rucio_file_listing', l))
             # Cache the result.
             self._cache_mgr.save_listing(dataset_listing_info(ds_name, r))
-        except BaseException as e:
-            # If this is an exception that tells us to re-try, then we need to "requeue" ourselves.
-            if "Try again" in str(e):
-                self._exe.submit(dataset_mgr._query_rucio, self, ds_name, seconds_to_wait=self._seconds_between_retries)
-            else:
-                raise
+        except RucioException:
+            self._exe.submit(dataset_mgr._query_rucio, self, ds_name, seconds_to_wait=self._seconds_between_retries)
+
     def download_ds(self, ds_name: str) -> Tuple[DatasetQueryStatus, Optional[List[str]]]:
         '''
         Return the list of files that are in a dataset if they have been downloaded. If not, then queue a query to
