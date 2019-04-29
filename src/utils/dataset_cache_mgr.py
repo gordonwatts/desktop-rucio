@@ -113,7 +113,7 @@ class dataset_cache_mgr:
         f_name = self._get_filename("download_in_progress", name)
         return os.path.exists(f_name)
 
-    def get_ds_contents(self, name:str):
+    def get_ds_contents(self, name:str) -> Optional[List[str]]:
         '''
         Return the list of files in the current dataset
 
@@ -137,5 +137,5 @@ class dataset_cache_mgr:
         result = []
         for f in os.listdir(f_name):
             if not f.endswith(".part"):
-                result.append(f)
+                result.append("{name}/{f}".format(**locals()))
         return result

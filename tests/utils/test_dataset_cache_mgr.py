@@ -25,7 +25,7 @@ def create_ds(ds: dataset_listing_info, cache:dataset_cache_mgr, create_files:bo
     extra = ".part" if write_as_parts else ""
     if create_files:
         for f in ds.FileList:
-            with open("{ds_dir}/{f}{extra}".format(**locals()), 'w') as f_h:
+            with open("{ds_dir}/{f.filename}{extra}".format(**locals()), 'w') as f_h:
                 f_h.write("hi")
 
 def test_dataset_cache_mgr_ctor():
@@ -70,6 +70,10 @@ def test_ds_local_files(local_cache, simple_dataset):
     r = local_cache.get_ds_contents(simple_dataset.Name)
     assert r is not None
     assert len(simple_dataset.FileList) == len(r)
+
+    print (r)
+    for f in simple_dataset.FileList:
+        assert '{simple_dataset.Name}/{f.filename}'.format(**locals()) in r
 
 def test_ds_local_files_weird_parts(local_cache, simple_dataset):
     create_ds(simple_dataset, local_cache, write_as_parts=True)
@@ -133,5 +137,3 @@ def test_ds_query_active(local_cache):
 
 def test_ds_query_active_none(local_cache):
     assert 0 == len(local_cache.get_queries())
-
-#  Make sure that filenames that come back are relative to the _loc for the dataset.
