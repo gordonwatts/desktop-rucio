@@ -143,6 +143,10 @@ class dataset_mgr:
         if status == DatasetQueryStatus.does_not_exist:
             return (DatasetQueryStatus.does_not_exist, None)
 
+        # Is the download already in progress? Then bail out.
+        if self._cache_mgr.download_in_progress(ds_name):
+            return (DatasetQueryStatus.query_queued, None)
+
         # Check to see if we've downloaded all the files. If so, return them. Otherwise, queue
         # up a fetch.
         f_list = self._cache_mgr.get_ds_contents(ds_name)

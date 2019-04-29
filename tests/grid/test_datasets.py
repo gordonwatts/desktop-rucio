@@ -38,6 +38,8 @@ def rucio_2file_dataset_take_time(simple_dataset):
         def __init__(self, ds):
             self._ds = ds
             self.CountCalled = 0
+            self.CountCalledDL = 0
+            self._cache_mgr = None
 
         def get_file_listing(self, ds_name, log_func = None):
             sleep(0.005)
@@ -45,6 +47,12 @@ def rucio_2file_dataset_take_time(simple_dataset):
             if ds_name == self._ds.Name:
                 return self._ds.FileList
             return None
+
+        def download_files(self, ds_name, data_dir):
+            sleep(0.005)
+            if self._cache_mgr is not None:
+                self._cache_mgr.add_ds(self._ds)
+            self.CountCalledDL += 1
 
     return rucio_dummy(simple_dataset)
 
@@ -359,10 +367,30 @@ def test_dataset_download_with_failures(rucio_2file_dataset_with_fails, cache_em
     # 2 failures, so make sure we re-try the right number of times
     assert 5 == rucio_2file_dataset_with_fails.CountCalledDL
 
+def test_dataset_download_good_ask_twice(rucio_2file_dataset_take_time, cache_empty, simple_dataset):
+    'Be impatient about asking how things are going'
+    rucio_2file_dataset_take_time._cache_mgr = cache_empty
+    dm = dataset_mgr(cache_empty, rucio_mgr=rucio_2file_dataset_take_time)
+    _ = dm.download_ds(simple_dataset.Name)
+
+    # Ask again.
+    status, _ = dm.download_ds(simple_dataset.Name)
+    assert DatasetQueryStatus.query_queued == status
+
+    # Wait for the dataset query to run
+    wait_some_time(lambda: rucio_2file_dataset_take_time.CountCalledDL == 0)
+
+    # Now, make sure that we get back what we want here.
+    status, _ = dm.download_ds(simple_dataset.Name)
+    assert DatasetQueryStatus.results_valid == status
+
+    # Make sure we didn't re-query for this.
+    sleep(0.02)
+    assert 1 == rucio_2file_dataset_take_time.CountCalledDL
+
+
 # Tests for downloads:
 # TODO:
-#  Try to download good ds with a few failures
-#  Deal with being asked twice
 #  Make sure the download is properly logged.
 #
 #  Make sure that filenames that come back are relative to the _loc for the dataset.
