@@ -5,7 +5,7 @@
 
 from datetime import datetime
 from src.grid.rucio import RucioFile
-from typing import List, Optional
+from typing import List, Optional, Iterator
 import os
 import tempfile
 import json
@@ -55,7 +55,7 @@ class dataset_cache_mgr:
             pickle.dump(ds_listing, f)
         self._remove_query_mark(ds_listing.Name)
 
-    def get_listing(self, name) -> dataset_listing_info:
+    def get_listing(self, name) -> Optional[dataset_listing_info]:
         'Return the listing. None if the listing does not exist'
         f_name = self._get_filename("cache", name)
         if not os.path.exists(f_name):
@@ -79,3 +79,46 @@ class dataset_cache_mgr:
         if os.path.exists(f_name):
             os.unlink(f_name)
 
+    def mark_downloading(self, name:str) -> None:
+        'Mark this datset name as having a download in progress'
+        f_name = self._get_filename("download_in_progress", name)
+        with open(f_name, 'w') as f:
+            f.write("Download marked in progress {0}".format(str(datetime.now())))
+
+    def mark_download_done(self, name:str) -> None:
+        'Mark this download as finished'
+        f_name = self._get_filename("download_in_progress", name)
+        if os.path.exists(f_name):
+            os.remove(f_name)
+
+    def download_in_progress(self, name:str) -> bool:
+        'Return true if `name` currently has a download in progress'
+        f_name = self._get_filename("download_in_progress", name)
+        return os.path.exists(f_name)
+
+    def get_ds_contents(self, name:str):
+        '''
+        Return the list of files in the current dataset
+
+        Args:
+            name:       Name fo the dataset
+
+        Returns:
+            [files]:    List of files.
+                        None if this dataset has not been downloaded locally.
+                        None if a download is currently in progress for this
+                            dataset.
+                        Empty if this dataset is known locally, but has no files.
+
+        '''
+        if self.download_in_progress(name):
+            return None
+
+        f_name = "{0}/{1}".format(self._loc, name)
+        if not os.path.isdir(f_name):
+            return None
+        result = []
+        for f in os.listdir(f_name):
+            if not f.endswith(".part"):
+                result.append(f)
+        return result

@@ -18,6 +18,16 @@ def local_cache():
     yield dataset_cache_mgr(location=loc)
     shutil.rmtree(loc)
 
+def create_ds(ds: dataset_listing_info, cache:dataset_cache_mgr, create_files:bool=True, write_as_parts=False):
+    'Create the files for a particular dataset'
+    ds_dir = "{0}/{1}".format(cache._loc, ds.Name)
+    os.mkdir(ds_dir)
+    extra = ".part" if write_as_parts else ""
+    if create_files:
+        for f in ds.FileList:
+            with open("{ds_dir}/{f}{extra}".format(**locals()), 'w') as f_h:
+                f_h.write("hi")
+
 def test_dataset_cache_mgr_ctor():
     dataset_cache_mgr()
 
@@ -54,3 +64,50 @@ def test_ds_query_mark_reset(local_cache, simple_dataset):
     local_cache.mark_query(simple_dataset.Name)
     local_cache.save_listing(simple_dataset)
     assert not local_cache.query_in_progress(simple_dataset.Name)
+
+def test_ds_local_files(local_cache, simple_dataset):
+    create_ds(simple_dataset, local_cache)
+    r = local_cache.get_ds_contents(simple_dataset.Name)
+    assert r is not None
+    assert len(simple_dataset.FileList) == len(r)
+
+def test_ds_local_files_weird_parts(local_cache, simple_dataset):
+    create_ds(simple_dataset, local_cache, write_as_parts=True)
+    r = local_cache.get_ds_contents(simple_dataset.Name)
+    assert r is not None
+    assert 0 == len(r)
+
+def test_ds_not_local(local_cache, simple_dataset):
+    r = local_cache.get_ds_contents(simple_dataset.Name)
+    assert r is None
+
+def test_ds_no_downloaded_files(local_cache, simple_dataset):
+    create_ds(simple_dataset, local_cache, create_files=False)
+    r = local_cache.get_ds_contents(simple_dataset.Name)
+    assert r is not None
+    assert 0 == len(r)
+
+def test_ds_downloading(local_cache, simple_dataset):
+    local_cache.mark_downloading(simple_dataset.Name)
+    assert local_cache.download_in_progress(simple_dataset.Name)
+
+def test_ds_not_downloading(local_cache, simple_dataset):
+    assert not local_cache.download_in_progress(simple_dataset.Name)
+
+def test_ds_query_when_downloading(local_cache, simple_dataset):
+    local_cache.mark_downloading(simple_dataset.Name)
+    r = local_cache.get_ds_contents(simple_dataset.Name)
+    assert r is None
+
+def test_ds_query_when_downloading_but_updated(local_cache, simple_dataset):
+    create_ds(simple_dataset, local_cache)
+    local_cache.mark_downloading(simple_dataset.Name)
+    r = local_cache.get_ds_contents(simple_dataset.Name)
+    assert r is None
+
+def test_ds_query_when_downloading_updated_done(local_cache, simple_dataset):
+    create_ds(simple_dataset, local_cache)
+    local_cache.mark_downloading(simple_dataset.Name)
+    local_cache.mark_download_done(simple_dataset.Name)
+    r = local_cache.get_ds_contents(simple_dataset.Name)
+    assert r is not None
