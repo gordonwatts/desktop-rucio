@@ -16,6 +16,11 @@ Param(
     $CertPath,
 
     [Parameter(Mandatory=$true)]
+    [ValidateScript({Test-Path $_ -PathType 'Container'})]
+    [string]
+    $DataDirectory,
+
+    [Parameter(Mandatory=$true)]
     [string]
     $GRIDPassword,
 
@@ -46,6 +51,7 @@ Process {
         -v $CertPath/grid-certs:/etc/grid-security/certificates:ro `
         -v $CertPath/vomsdir:/etc/grid-security/vomsdir:ro `
         -v $CertPath/ca.crt:/etc/ca.crt:ro `
+        -v ${DataDirectory}:/data `
         --name=desktop-rucio `
         -e RUCIO_ACCOUNT=${RUCIOAccount} `
         -e GRID_PASSWORD=${GRIDPassword} `
