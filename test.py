@@ -1,6 +1,6 @@
 # Test harness for debugging easily.
 
-from tests.utils.test_dataset_cache_mgr import test_ds_local_files
+from tests.grid.test_datasets import test_dataset_download_restart_and_marked
 from src.grid.rucio import RucioFile, RucioException
 from src.utils.dataset_cache_mgr import dataset_cache_mgr
 from src.utils.dataset_cache_mgr import dataset_listing_info
@@ -8,6 +8,7 @@ from tests.grid.utils_for_tests import run_dummy_multiple
 import os
 import tempfile
 import shutil
+from time import sleep
 
 def rucio_2file_dataset(simple_dataset):
     class rucio_dummy:
@@ -42,6 +43,7 @@ def rucio_do_nothing():
 
         def download_files(self, ds_name, data_dir, log_func = None):
             self.CountCalledDL += 1
+            sleep(15)
 
     return rucio_dummy()
 
@@ -52,6 +54,7 @@ def rucio_2file_dataset_with_fails(simple_dataset):
             self.CountCalled = 0
             self.CountCalledDL = 0
             self._cache_mgr = None
+            self.DLSleep = None
 
         def get_file_listing(self, ds_name, log_func = None):
             self.CountCalled += 1
@@ -61,8 +64,10 @@ def rucio_2file_dataset_with_fails(simple_dataset):
                 return self._ds.FileList
             return None
 
-        def download_files(self, ds_name, data_dir):
+        def download_files(self, ds_name, data_dir, log_func = None):
             self.CountCalledDL += 1
+            if self.DLSleep is not None:
+                sleep(self.DLSleep)
             if self.CountCalledDL < 5:
                 raise RucioException("Please try again due to internet being out")
             if self._cache_mgr is not None:
@@ -129,6 +134,8 @@ def cache_empty():
             self._in_progress.append(ds_name)
         def query_in_progress(self, ds_name):
             return ds_name in self._in_progress
+        def get_queries(self):
+            return self._in_progress
 
         def get_ds_contents(self, ds_name):
             if ds_name in self._downloaded_ds:
@@ -226,4 +233,4 @@ Files that cannot be downloaded :             0'''], 'shell_result':75, 'delay':
     return run_dummy_multiple(responses)
 
 
-test_ds_local_files(local_cache(), simple_dataset())
+test_dataset_download_restart_and_marked(rucio_do_nothing(), rucio_2file_dataset_with_fails(simple_dataset()), cache_empty(), simple_dataset())
