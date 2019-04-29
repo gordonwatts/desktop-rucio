@@ -1,6 +1,7 @@
 # Test out everything with datasets.
 
 from src.grid.datasets import dataset_mgr, DatasetQueryStatus
+from src.grid.rucio import RucioException
 from tests.grid.utils_for_tests import simple_dataset
 from time import sleep
 import datetime
@@ -53,14 +54,23 @@ def rucio_2file_dataset_with_fails(simple_dataset):
         def __init__(self, ds):
             self._ds = ds
             self.CountCalled = 0
+            self.CountCalledDL = 0
+            self._cache_mgr = None
 
         def get_file_listing(self, ds_name, log_func = None):
             self.CountCalled += 1
             if self.CountCalled < 5:
-                raise BaseException("Please Try again Due To Internet Being Out")
+                raise RucioException("Please Try again Due To Internet Being Out")
             if ds_name == self._ds.Name:
                 return self._ds.FileList
             return None
+
+        def download_files(self, ds_name, data_dir):
+            self.CountCalledDL += 1
+            if self.CountCalledDL < 5:
+                raise RucioException("Please try again due to internet being out")
+            if self._cache_mgr is not None:
+                self._cache_mgr.add_ds(self._ds)
 
     return rucio_dummy(simple_dataset)
 
@@ -316,7 +326,7 @@ def test_dataset_download_good(rucio_2file_dataset, cache_empty, simple_dataset)
     assert len(simple_dataset.FileList) == len(files)
 
     # Make sure we didn't re-query for this.
-    assert 1 == rucio_2file_dataset.CountCalled
+    assert 1 == rucio_2file_dataset.CountCalledDL
 
 def test_dataset_download_no_exist(rucio_2file_dataset, cache_empty):
     'Queue a download and look for it to show up'
@@ -331,6 +341,23 @@ def test_dataset_download_no_exist(rucio_2file_dataset, cache_empty):
     status, files = dm.download_ds('bogus')
     assert DatasetQueryStatus.does_not_exist == status
     assert None is files
+
+def test_dataset_download_with_failures(rucio_2file_dataset_with_fails, cache_empty, simple_dataset):
+    'Queue a download, it fails, but then gets there'
+    rucio_2file_dataset_with_fails._cache_mgr = cache_empty
+    dm = dataset_mgr(cache_empty, rucio_mgr=rucio_2file_dataset_with_fails, seconds_between_retries=0.01)
+    _ = dm.download_ds(simple_dataset.Name)
+
+    # Wait for the dataset query to run
+    wait_some_time(lambda: rucio_2file_dataset_with_fails.CountCalledDL < 5)
+
+    # Now, make sure that we get back what we want here.
+    status, files = dm.download_ds(simple_dataset.Name)
+    assert DatasetQueryStatus.results_valid == status
+    assert len(simple_dataset.FileList) == len(files)
+
+    # 2 failures, so make sure we re-try the right number of times
+    assert 5 == rucio_2file_dataset_with_fails.CountCalledDL
 
 # Tests for downloads:
 # TODO:

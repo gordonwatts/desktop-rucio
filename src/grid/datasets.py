@@ -1,6 +1,6 @@
 # Manage everything having to do with the organization
 # of datasets.
-from src.grid.rucio import RucioFile, rucio
+from src.grid.rucio import RucioFile, rucio, RucioException
 from src.utils.logging_mgr import logging_mgr
 from src.utils.dataset_cache_mgr import dataset_cache_mgr, dataset_listing_info
 from typing import List, Optional, Tuple
@@ -155,8 +155,17 @@ class dataset_mgr:
             return (DatasetQueryStatus.query_queued, None)
         return (DatasetQueryStatus.results_valid, f_list)
 
-    def _rucio_download(self, ds_name:str) -> None:
+    def _rucio_download(self, ds_name:str, seconds_to_wait:int = None) -> None:
         'Download the files synchronously - this could take a long time'
-        r = self._rucio.download_files(ds_name, self._cache_mgr.get_download_directory())
+        # If we should wait before we re-try
+        if seconds_to_wait is not None:
+            sleep(seconds_to_wait)
+
+        # Try again.
+        try:
+            r = self._rucio.download_files(ds_name, self._cache_mgr.get_download_directory())
+        except RucioException:
+            self._downloader.submit(dataset_mgr._rucio_download, self, ds_name, seconds_to_wait=self._seconds_between_retries)
+
         # Done, mark this as "done"
         self._cache_mgr.mark_download_done(ds_name)
