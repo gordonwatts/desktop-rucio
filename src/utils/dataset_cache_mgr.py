@@ -82,6 +82,11 @@ class dataset_cache_mgr:
         f_name = self._get_filename("query_in_progress", name)
         return os.path.exists(f_name)
 
+    def get_queries(self) -> List[str]:
+        'Return a list of all datasets that are queried for file content'
+        return [os.path.splitext(f)[0] for f in os.listdir(self._get_directory("query_in_progress"))]
+
+
     def _remove_query_mark(self, name) -> None:
         f_name = self._get_filename("query_in_progress", name)
         if os.path.exists(f_name):

@@ -122,3 +122,16 @@ def test_get_downloading_datasets(local_cache):
 
 def test_get_downloading_no_datasets(local_cache):
     assert 0 == len(local_cache.get_downloading())
+
+def test_ds_query_active(local_cache):
+    local_cache.mark_query('ds1')
+    local_cache.mark_query('ds2')
+    d = local_cache.get_queries()
+    assert 2 == len(d)
+    assert 'ds1' in d
+    assert 'ds2' in d
+
+def test_ds_query_active_none(local_cache):
+    assert 0 == len(local_cache.get_queries())
+
+#  Make sure that filenames that come back are relative to the _loc for the dataset.

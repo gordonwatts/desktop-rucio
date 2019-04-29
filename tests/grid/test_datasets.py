@@ -148,6 +148,8 @@ def cache_empty():
             self._in_progress.append(ds_name)
         def query_in_progress(self, ds_name):
             return ds_name in self._in_progress
+        def get_queries(self):
+            return self._in_progress
 
         def get_ds_contents(self, ds_name):
             if ds_name in self._downloaded_ds:
@@ -335,6 +337,19 @@ def test_good_dataset_maxAgeIfNotSeenNoEffect(rucio_2file_dataset, cache_empty, 
     assert DatasetQueryStatus.results_valid == status
     assert 1 == rucio_2file_dataset.CountCalled
 
+def test_good_dataset_content_restart(rucio_do_nothing, rucio_2file_dataset, cache_empty, simple_dataset):
+    dm0 = dataset_mgr(cache_empty, rucio_mgr=rucio_do_nothing)
+    _ = dm0.get_ds_contents(simple_dataset.Name)
+    wait_some_time(lambda: rucio_do_nothing.CountCalled == 0)
+
+    # Start up a new one that should pick up the ball where it was dropped.
+    dm = dataset_mgr(cache_empty, rucio_mgr=rucio_2file_dataset)
+    wait_some_time(lambda: rucio_2file_dataset.CountCalled == 0)
+
+    # Now, make sure that we get back what we want here.
+    status, _ = dm.get_ds_contents(simple_dataset.Name)
+    assert DatasetQueryStatus.results_valid == status
+
 def test_dataset_download_query(rucio_2file_dataset, cache_empty, simple_dataset):
     'Queue a download and look for it to show up'
     dm = dataset_mgr(cache_empty, rucio_mgr=rucio_2file_dataset)
@@ -438,10 +453,3 @@ def test_dataset_download_restart(rucio_do_nothing, rucio_2file_dataset, cache_e
     status, _ = dm.download_ds(simple_dataset.Name)
 
     assert DatasetQueryStatus.results_valid == status
-
-
-# Tests for downloads:
-# TODO:
-#  Same for getting the content.
-#
-#  Make sure that filenames that come back are relative to the _loc for the dataset.

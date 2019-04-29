@@ -55,6 +55,7 @@ class dataset_mgr:
         # Look for pending downloads and directory listings to see if we
         # should resume anything.
         self._check_for_pending_downloads()
+        self._check_for_pending_queries()
 
     def get_ds_contents(self, ds_name: str, maxAge: Optional[datetime.timedelta] = None, maxAgeIfNotSeen: Optional[datetime.timedelta] = datetime.timedelta(minutes=60)) -> Tuple[DatasetQueryStatus, Optional[List[RucioFile]]]:
         '''
@@ -124,6 +125,11 @@ class dataset_mgr:
             self._cache_mgr.save_listing(dataset_listing_info(ds_name, r))
         except RucioException:
             self._exe.submit(dataset_mgr._query_rucio, self, ds_name, seconds_to_wait=self._seconds_between_retries)
+
+    def _check_for_pending_queries(self):
+        'Look to see if there are any pending downloads. If there are, then have then start up again'
+        for d in self._cache_mgr.get_queries():
+            self._downloader.submit(dataset_mgr._query_rucio, self, d)
 
     def download_ds(self, ds_name: str) -> Tuple[DatasetQueryStatus, Optional[List[str]]]:
         '''
