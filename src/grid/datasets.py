@@ -141,7 +141,13 @@ class dataset_mgr:
                               Empty Dataset: The dataset is empty if the list has len()==0.
                               Dataset with files: The list will have an entry per file
         '''
-        # If files are already local, return them. Otherwise, we have to submit a download
+        # Do we know if the dataset already exists or not locally? If so, take advantage of that info.
+        status, files = self.get_ds_contents(ds_name)
+        if status == DatasetQueryStatus.does_not_exist:
+            return (DatasetQueryStatus.does_not_exist, None)
+
+        # Check to see if we've downloaded all the files. If so, return them. Otherwise, queue
+        # up a fetch.
         f_list = self._cache_mgr.get_ds_contents(ds_name)
         if f_list is None:
             self._cache_mgr.mark_downloading(ds_name)

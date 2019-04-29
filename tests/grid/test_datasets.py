@@ -14,6 +14,7 @@ def rucio_2file_dataset(simple_dataset):
         def __init__(self, ds):
             self._ds = ds
             self.CountCalled = 0
+            self.CountCalledDL = 0
             self._cache_mgr = None
 
         def get_file_listing(self, ds_name, log_func = None):
@@ -25,7 +26,7 @@ def rucio_2file_dataset(simple_dataset):
         def download_files(self, ds_name, data_dir):
             if self._cache_mgr is not None:
                 self._cache_mgr.add_ds(self._ds)
-            self.CountCalled += 1
+            self.CountCalledDL += 1
 
 
     return rucio_dummy(simple_dataset)
@@ -307,7 +308,7 @@ def test_dataset_download_good(rucio_2file_dataset, cache_empty, simple_dataset)
     _ = dm.download_ds(simple_dataset.Name)
 
     # Wait for the dataset query to run
-    wait_some_time(lambda: rucio_2file_dataset.CountCalled == 0)
+    wait_some_time(lambda: rucio_2file_dataset.CountCalledDL == 0)
 
     # Now, make sure that we get back what we want here.
     status, files = dm.download_ds(simple_dataset.Name)
@@ -317,12 +318,24 @@ def test_dataset_download_good(rucio_2file_dataset, cache_empty, simple_dataset)
     # Make sure we didn't re-query for this.
     assert 1 == rucio_2file_dataset.CountCalled
 
+def test_dataset_download_no_exist(rucio_2file_dataset, cache_empty):
+    'Queue a download and look for it to show up'
+    rucio_2file_dataset._cache_mgr = cache_empty
+    dm = dataset_mgr(cache_empty, rucio_mgr=rucio_2file_dataset)
+    _ = dm.download_ds('bogus')
+
+    # Wait for the dataset query to run
+    wait_some_time(lambda: rucio_2file_dataset.CountCalledDL == 0)
+
+    # Now, make sure that we get back what we want here.
+    status, files = dm.download_ds('bogus')
+    assert DatasetQueryStatus.does_not_exist == status
+    assert None is files
+
 # Tests for downloads:
 # TODO:
-#  Make sure that filenames that come back are relative to the _loc for the dataset.
-#  Try to download a non-existant dataset
 #  Try to download good ds with a few failures
-#  Make sure (?) that the full list of files for a dataset is downloaded - so trigger a lookup when we do the download.
 #  Deal with being asked twice
-#  limit them to 3 at a time or similar (?)
 #  Make sure the download is properly logged.
+#
+#  Make sure that filenames that come back are relative to the _loc for the dataset.
