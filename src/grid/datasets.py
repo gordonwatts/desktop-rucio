@@ -46,6 +46,7 @@ class dataset_mgr:
         '''
         # We want to query rucio one dataset at a time.
         self._exe = ThreadPoolExecutor(max_workers=1)
+        self._downloader = ThreadPoolExecutor(max_workers=3)
         self._rucio = rucio_mgr if rucio_mgr is not None else rucio()
         self._cache_mgr = data_mgr
         self._seconds_between_retries = seconds_between_retries
@@ -96,12 +97,12 @@ class dataset_mgr:
         self._cache_mgr.mark_query(ds_name)
             
         # Queue up run against rucio to find out what is in this dataset.
-        self._exe.submit(dataset_mgr.query_rucio, self, ds_name)
+        self._exe.submit(dataset_mgr._query_rucio, self, ds_name)
 
         # Return the fact that the query has been queued.
         return (DatasetQueryStatus.query_queued, None)
 
-    def query_rucio(self, ds_name:str, seconds_to_wait:float=None) -> None:
+    def _query_rucio(self, ds_name:str, seconds_to_wait:float=None) -> None:
         '''
         Run a query against rucio and then save the results.
 
@@ -120,6 +121,36 @@ class dataset_mgr:
         except BaseException as e:
             # If this is an exception that tells us to re-try, then we need to "requeue" ourselves.
             if "Try again" in str(e):
-                self._exe.submit(dataset_mgr.query_rucio, self, ds_name, seconds_to_wait=self._seconds_between_retries)
+                self._exe.submit(dataset_mgr._query_rucio, self, ds_name, seconds_to_wait=self._seconds_between_retries)
             else:
                 raise
+    def download_ds(self, ds_name: str) -> Tuple[DatasetQueryStatus, Optional[List[str]]]:
+        '''
+        Return the list of files that are in a dataset if they have been downloaded. If not, then queue a query to
+        rucio to get the actual file contents.
+
+        Arguments
+        ds_name       The rucio fully qualified name of the dataset
+
+        Returns
+        status        Status of the returned results (see DatasetQueryStatus) and below:
+        files         Depends on the status:
+                          does_not_exist - files will be None, and the dataset was not found on the last query to rucio.
+                          query_queued - files will be None, and a query is pending to update the results
+                          results_valid - files will be a list of all files in the dataset. 
+                              Empty Dataset: The dataset is empty if the list has len()==0.
+                              Dataset with files: The list will have an entry per file
+        '''
+        # If files are already local, return them. Otherwise, we have to submit a download
+        f_list = self._cache_mgr.get_ds_contents(ds_name)
+        if f_list is None:
+            self._cache_mgr.mark_downloading(ds_name)
+            self._downloader.submit(dataset_mgr._rucio_download, self, ds_name)
+            return (DatasetQueryStatus.query_queued, None)
+        return (DatasetQueryStatus.results_valid, f_list)
+
+    def _rucio_download(self, ds_name:str) -> None:
+        'Download the files synchronously - this could take a long time'
+        r = self._rucio.download_files(ds_name, self._cache_mgr.get_download_directory())
+        # Done, mark this as "done"
+        self._cache_mgr.mark_download_done(ds_name)

@@ -4,6 +4,7 @@ from src.grid.datasets import dataset_mgr, DatasetQueryStatus
 from tests.grid.utils_for_tests import simple_dataset
 from time import sleep
 import datetime
+import os
 
 import pytest
 
@@ -13,12 +14,19 @@ def rucio_2file_dataset(simple_dataset):
         def __init__(self, ds):
             self._ds = ds
             self.CountCalled = 0
+            self._cache_mgr = None
 
         def get_file_listing(self, ds_name, log_func = None):
             self.CountCalled += 1
             if ds_name == self._ds.Name:
                 return self._ds.FileList
             return None
+
+        def download_files(self, ds_name, data_dir):
+            if self._cache_mgr is not None:
+                self._cache_mgr.add_ds(self._ds)
+            self.CountCalled += 1
+
 
     return rucio_dummy(simple_dataset)
 
@@ -79,6 +87,14 @@ def cache_empty():
         def __init__(self):
             self._ds_list = {}
             self._in_progress = []
+            self._in_download = []
+            self._downloaded_ds = {}
+        
+        def get_download_directory(self):
+            return 'totally-bogus'
+
+        def add_ds(self, ds_info):
+            self._downloaded_ds[ds_info.Name] = ds_info
 
         def get_listing(self, ds_name):
             if ds_name in self._ds_list:
@@ -93,7 +109,20 @@ def cache_empty():
             self._in_progress.append(ds_name)
         def query_in_progress(self, ds_name):
             return ds_name in self._in_progress
-        
+
+        def get_ds_contents(self, ds_name):
+            if ds_name in self._downloaded_ds:
+                return [f.filename for f in self._downloaded_ds[ds_name].FileList]
+            return None
+
+        def mark_downloading(self, ds_name):
+            self._in_download.append(ds_name)
+
+        def download_in_progress(self, ds_name):
+            return ds_name in self._in_download
+
+        def mark_download_done(self, ds_name):
+            self._in_download.remove(ds_name)
 
     return cache_good_dummy()
 
@@ -263,3 +292,37 @@ def test_good_dataset_maxAgeIfNotSeenNoEffect(rucio_2file_dataset, cache_empty, 
     status, _ = dm.get_ds_contents(simple_dataset.Name, maxAgeIfNotSeen=datetime.timedelta(seconds=0))
     assert DatasetQueryStatus.results_valid == status
     assert 1 == rucio_2file_dataset.CountCalled
+
+def test_dataset_download_query(rucio_2file_dataset, cache_empty, simple_dataset):
+    'Queue a download and look for it to show up'
+    dm = dataset_mgr(cache_empty, rucio_mgr=rucio_2file_dataset)
+    status, files = dm.download_ds(simple_dataset.Name)
+    assert files is None
+    assert DatasetQueryStatus.query_queued == status
+
+def test_dataset_download_good(rucio_2file_dataset, cache_empty, simple_dataset):
+    'Queue a download and look for it to show up'
+    rucio_2file_dataset._cache_mgr = cache_empty
+    dm = dataset_mgr(cache_empty, rucio_mgr=rucio_2file_dataset)
+    _ = dm.download_ds(simple_dataset.Name)
+
+    # Wait for the dataset query to run
+    wait_some_time(lambda: rucio_2file_dataset.CountCalled == 0)
+
+    # Now, make sure that we get back what we want here.
+    status, files = dm.download_ds(simple_dataset.Name)
+    assert DatasetQueryStatus.results_valid == status
+    assert len(simple_dataset.FileList) == len(files)
+
+    # Make sure we didn't re-query for this.
+    assert 1 == rucio_2file_dataset.CountCalled
+
+# Tests for downloads:
+# TODO:
+#  Make sure that filenames that come back are relative to the _loc for the dataset.
+#  Try to download a non-existant dataset
+#  Try to download good ds with a few failures
+#  Make sure (?) that the full list of files for a dataset is downloaded - so trigger a lookup when we do the download.
+#  Deal with being asked twice
+#  limit them to 3 at a time or similar (?)
+#  Make sure the download is properly logged.

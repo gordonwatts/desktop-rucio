@@ -43,6 +43,10 @@ class dataset_cache_mgr:
         if not os.path.exists(self._loc):
             os.mkdir(self._loc)
 
+    def get_download_directory(self):
+        'Return the directory where all data should be downloaded'
+        return self._loc
+
     def _get_filename(self, dirname, fname_stub):
         d = "{self._loc}/{dirname}".format(**locals())
         if not os.path.exists(d):
