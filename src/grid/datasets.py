@@ -52,6 +52,10 @@ class dataset_mgr:
         self._seconds_between_retries = seconds_between_retries
         self._log = logger if logger is not None else logging_mgr()
 
+        # Look for pending downloads and directory listings to see if we
+        # should resume anything.
+        self._check_for_pending_downloads()
+
     def get_ds_contents(self, ds_name: str, maxAge: Optional[datetime.timedelta] = None, maxAgeIfNotSeen: Optional[datetime.timedelta] = datetime.timedelta(minutes=60)) -> Tuple[DatasetQueryStatus, Optional[List[RucioFile]]]:
         '''
         Return the list of files that are in a dataset if they are in our local cache. If not, then queue a query to
@@ -170,3 +174,8 @@ class dataset_mgr:
 
         # Done, mark this as "done"
         self._cache_mgr.mark_download_done(ds_name)
+
+    def _check_for_pending_downloads(self):
+        'Look to see if there are any pending downloads. If there are, then have then start up again'
+        for d in self._cache_mgr.get_downloading():
+            self._downloader.submit(dataset_mgr._rucio_download, self, d)

@@ -111,3 +111,14 @@ def test_ds_query_when_downloading_updated_done(local_cache, simple_dataset):
     local_cache.mark_download_done(simple_dataset.Name)
     r = local_cache.get_ds_contents(simple_dataset.Name)
     assert r is not None
+
+def test_get_downloading_datasets(local_cache):
+    local_cache.mark_downloading('ds1')
+    local_cache.mark_downloading('ds2')
+    d = local_cache.get_downloading()
+    assert 2 == len(d)
+    assert 'ds1' in d
+    assert 'ds2' in d
+
+def test_get_downloading_no_datasets(local_cache):
+    assert 0 == len(local_cache.get_downloading())

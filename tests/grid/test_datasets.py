@@ -35,6 +35,24 @@ def rucio_2file_dataset(simple_dataset):
     return rucio_dummy(simple_dataset)
 
 @pytest.fixture()
+def rucio_do_nothing():
+    class rucio_dummy:
+        def __init__(self):
+            self.CountCalled = 0
+            self.CountCalledDL = 0
+            
+        def get_file_listing(self, ds_name, log_func = None):
+            self.CountCalled += 1
+            sleep(1)
+            return None
+
+        def download_files(self, ds_name, data_dir, log_func = None):
+            self.CountCalledDL += 1
+            sleep(1)
+
+    return rucio_dummy()
+
+@pytest.fixture()
 def rucio_2file_dataset_take_time(simple_dataset):
     class rucio_dummy:
         def __init__(self, ds):
@@ -141,6 +159,9 @@ def cache_empty():
 
         def download_in_progress(self, ds_name):
             return ds_name in self._in_download
+
+        def get_downloading(self):
+            return self._in_download
 
         def mark_download_done(self, ds_name):
             self._in_download.remove(ds_name)
@@ -403,10 +424,24 @@ def test_dataset_download_logs(rucio_2file_dataset, cache_empty, simple_dataset)
     # Make sure some lines were sent to the logger
     assert len(lg.lines) > 0
 
+def test_dataset_download_restart(rucio_do_nothing, rucio_2file_dataset, cache_empty, simple_dataset):
+    rucio_2file_dataset._cache_mgr = cache_empty
+
+    # Trigger the download on one.
+    dm0 = dataset_mgr(cache_empty, rucio_mgr=rucio_do_nothing)
+    _ = dm0.download_ds(simple_dataset.Name)
+    wait_some_time(lambda: rucio_do_nothing.CountCalledDL == 0)
+
+    # Next, create a second one with the same cache.
+    dm = dataset_mgr(cache_empty, rucio_mgr=rucio_2file_dataset)
+    wait_some_time(lambda: rucio_2file_dataset.CountCalledDL == 0)
+    status, _ = dm.download_ds(simple_dataset.Name)
+
+    assert DatasetQueryStatus.results_valid == status
+
+
 # Tests for downloads:
 # TODO:
-#  Make sure the download is properly logged.
-#  Make sure that if we die and restart, we pick up the downloads automatically.
 #  Same for getting the content.
 #
 #  Make sure that filenames that come back are relative to the _loc for the dataset.

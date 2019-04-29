@@ -47,10 +47,14 @@ class dataset_cache_mgr:
         'Return the directory where all data should be downloaded'
         return self._loc
 
-    def _get_filename(self, dirname, fname_stub):
+    def _get_directory(self, dirname):
         d = "{self._loc}/{dirname}".format(**locals())
         if not os.path.exists(d):
             os.mkdir(d)
+        return d
+
+    def _get_filename(self, dirname, fname_stub):
+        d = self._get_directory(dirname)
         return "{d}/{fname_stub}.pickle".format(**locals())
 
     def save_listing (self, ds_listing: dataset_listing_info) -> None:
@@ -94,6 +98,10 @@ class dataset_cache_mgr:
         f_name = self._get_filename("download_in_progress", name)
         if os.path.exists(f_name):
             os.remove(f_name)
+
+    def get_downloading(self) -> List[str]:
+        'Return a list of all datasets that are downloading'
+        return [os.path.splitext(f)[0] for f in os.listdir(self._get_directory("download_in_progress"))]
 
     def download_in_progress(self, name:str) -> bool:
         'Return true if `name` currently has a download in progress'
