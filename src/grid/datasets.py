@@ -149,7 +149,7 @@ class dataset_mgr:
                               Dataset with files: The list will have an entry per file
         '''
         # Do we know if the dataset already exists or not locally? If so, take advantage of that info.
-        status, files = self.get_ds_contents(ds_name)
+        status, _ = self.get_ds_contents(ds_name)
         if status == DatasetQueryStatus.does_not_exist:
             return (DatasetQueryStatus.does_not_exist, None)
 
