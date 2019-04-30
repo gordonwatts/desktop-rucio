@@ -16,20 +16,43 @@ aware of before using this package:
 
 ### Before Running
 
-Make sure you have a clean directory set aside on your host machine to hold the files and some meta-data from `desktop-rucio`.
-Do the same with a directory where the system can keep a set of certificates. Make sure `docker` is allowed to share these
-mount points with containers (e.g. on Windows, you must explicitly grant `docker` permission to access each disk).
+Follow these steps. `desktop-rucio` needs to keep some metadata and the actual data on the host filesystem to preserve state
+and expensive downloads across invocations.
+
+1. Create the directory where all your data will be stored. Make sure `docker` has permissions to share this directory (on
+    windows you must enable disk sharing on a per-disk basis). Obviously, some disk with lots of space is ideal.
+1. Create the directory where docker can store all the certificates. Make sure `docker` can share this directory.
+1. In the certificate directory, create a directory called `usercert`. Copy into that directory your `usercert.pem` and `userkey.pem`
+   personal certificates you use to access rucio data files. They will be password protected (I do not know if it is possible to
+   create them without passwords at this point).
 
 ### Starting the container
 
-Scripts have been written to make this simpler to start as some significant mapping must be done between the container and the
-host system.
+Use one of the scripts to get things started. A number of directories must be mounted in the container - the scripts make this a lot simpler.
+
+A note on passwords. The system is designed to track your user certificate password. It does this in memory (it doesn't write it out), and the
+logging system won't capture it. However, if you don't feel comfortable having it, then enter something incorrect. The automatic certificate
+renewal will, of course, fail, and you'll have to do this by hand (see the end of the usage section).
 
 #### Windows
 
+From the root directory of the package (or download the script from [here](https://github.com/gordonwatts/desktop-rucio/blob/master/scripts/Start-DesktopRucio.ps1)).
+This script is written in PowerShell.
 
+    ./Start-DesktopRucio <certificate-dir> <data-dir> <certificate-password> -containerVersion <version>
+
+where `certificate-dir` and `data-dir` are the directories you've already created. `certificate-password` is the password you would normally pass to the
+command `voms-proxy-init` to access your user certificate. Finally, `containerVersion` is docker tag. It defaults to `latest`.
 
 #### Linux
+
+From the root directory of the package (or download the script from [here](https://github.com/gordonwatts/desktop-rucio/blob/master/scripts/startDesktopRucio.sh)).
+This script is written in bash.
+
+    ./startDesktopRucio.sh <certificate-dir> <data-dir> <certificate-password> -containerVersion <version>
+
+where `certificate-dir` and `data-dir` are the directories you've already created. `certificate-password` is the password you would normally pass to the
+command `voms-proxy-init` to access your user certificate. Finally, `containerVersion` is docker tag. It defaults to `latest`.
 
 ### Using `desktop-rucio`
 
@@ -120,7 +143,11 @@ across restarts of the container, dropped internet connections, etc.
 
     $ curl http://localhost:8000/ds?ds_name=mc16_13TeV.311309.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS5_ltlow.deriv.DAOD_EXOT15.e7270_e5984_s3234_r10201_r10210_p3795
     {"status": "local", "filelist": [
-        "mc16_13TeV.311309.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS5_ltlow.deriv.DAOD_EXOT15.e7270_e5984_s3234_r10201_r10210_p3795/DAOD_EXOT15.17545497._000001.pool.root.1", "mc16_13TeV.311309.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS5_ltlow.deriv.DAOD_EXOT15.e7270_e5984_s3234_r10201_r10210_p3795/DAOD_EXOT15.17545497._000002.pool.root.1", "mc16_13TeV.311309.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS5_ltlow.deriv.DAOD_EXOT15.e7270_e5984_s3234_r10201_r10210_p3795/DAOD_EXOT15.17545497._000003.pool.root.1", "mc16_13TeV.311309.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS5_ltlow.deriv.DAOD_EXOT15.e7270_e5984_s3234_r10201_r10210_p3795/DAOD_EXOT15.17545497._000004.pool.root.1", "mc16_13TeV.311309.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS5_ltlow.deriv.DAOD_EXOT15.e7270_e5984_s3234_r10201_r10210_p3795/DAOD_EXOT15.17545497._000005.pool.root.1"
+        "mc16_13TeV.311309.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS5_ltlow.deriv.DAOD_EXOT15.e7270_e5984_s3234_r10201_r10210_p3795/DAOD_EXOT15.17545497._000001.pool.root.1",
+        "mc16_13TeV.311309.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS5_ltlow.deriv.DAOD_EXOT15.e7270_e5984_s3234_r10201_r10210_p3795/DAOD_EXOT15.17545497._000002.pool.root.1",
+        "mc16_13TeV.311309.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS5_ltlow.deriv.DAOD_EXOT15.e7270_e5984_s3234_r10201_r10210_p3795/DAOD_EXOT15.17545497._000003.pool.root.1",
+        "mc16_13TeV.311309.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS5_ltlow.deriv.DAOD_EXOT15.e7270_e5984_s3234_r10201_r10210_p3795/DAOD_EXOT15.17545497._000004.pool.root.1",
+        "mc16_13TeV.311309.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS5_ltlow.deriv.DAOD_EXOT15.e7270_e5984_s3234_r10201_r10210_p3795/DAOD_EXOT15.17545497._000005.pool.root.1"
         ]
     }
 
