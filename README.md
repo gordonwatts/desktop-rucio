@@ -39,7 +39,7 @@ renewal will, of course, fail, and you'll have to do this by hand (see the end o
 From the root directory of the package (or download the script from [here](https://github.com/gordonwatts/desktop-rucio/blob/master/scripts/Start-DesktopRucio.ps1)).
 This script is written in PowerShell.
 
-    ./Start-DesktopRucio <certificate-dir> <data-dir> <certificate-password> -containerVersion <version>
+    ./Start-DesktopRucio <certificate-dir> <data-dir> <certificate-password> -RUCIOAccount <rucio-account-name>
 
 where `certificate-dir` and `data-dir` are the directories you've already created. `certificate-password` is the password you would normally pass to the
 command `voms-proxy-init` to access your user certificate. Finally, `containerVersion` is docker tag. It defaults to `latest`.
@@ -49,7 +49,7 @@ command `voms-proxy-init` to access your user certificate. Finally, `containerVe
 From the root directory of the package (or download the script from [here](https://github.com/gordonwatts/desktop-rucio/blob/master/scripts/startDesktopRucio.sh)).
 This script is written in bash.
 
-    ./startDesktopRucio.sh <certificate-dir> <data-dir> <certificate-password> -containerVersion <version>
+    ./startDesktopRucio.sh <certificate-dir> <data-dir> <certificate-password> -RUCIOAccount <rucio-account-name>
 
 where `certificate-dir` and `data-dir` are the directories you've already created. `certificate-password` is the password you would normally pass to the
 command `voms-proxy-init` to access your user certificate. Finally, `containerVersion` is docker tag. It defaults to `latest`.
@@ -186,4 +186,4 @@ A few quick items:
 - PR are gratefully accepted on [github](https://github.com/gordonwatts/desktop-rucio).
 - To run unit tests use `pytest` from the base directory of the package. If you fix bugs or add new features,
   please do your best to follow the convention and add tests.
-- To build the `docker` container use `docker build -t desktop-rucio:alpha-1.0.0 Docker/Dockerfile .` from the package root directory
+- To build the `docker` container use `docker build --rm -f "Docker\Dockerfile" -t desktop-rucio:alpha-0.1.0 .` from the package root directory
