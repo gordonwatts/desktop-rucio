@@ -26,7 +26,7 @@ Param(
 
     [Parameter(Mandatory=$true)]
     [string]
-    $RUCIOAccount = "gwatts",
+    $RUCIOAccount,
 
     [string]
     $containerVersion = "latest",
@@ -87,10 +87,6 @@ Process {
     }
     if (!(Test-Path -Path $CertPath/vomsdir)) {
         $junk = New-Item -ItemType Directory $CertPath/vomsdir
-        $needs_cert_update = $true
-    }
-    if (!(Test-Path -Path $CertPath/vomses)) {
-        $junk = New-Item -ItemType Directory $CertPath/vomses
         $needs_cert_update = $true
     }
     if (!(Test-Path -Path $CertPath/rucio.cfg)) {

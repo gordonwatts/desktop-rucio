@@ -19,7 +19,7 @@ echo -n "lxplus Password: "
 read -s password
 echo
 
-rshInfo="sshpass -p $password ssh -o StrictHostKeyChecking=no -l $user"
+rshInfo="sshpass -p $password ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -l $user"
 
 # Now start doing the rsync
 rsync -zhl --rsh="$rshInfo" $user@lxplus.cern.ch:/cvmfs/atlas.cern.ch/repo/ATLASLocalRootBase/x86_64/emi/4.0.3-1v3/etc/vomses/* /etc/vomses
