@@ -44,10 +44,14 @@ Param(
     $CertificateUpdate
 )
 Process {
-    function start_docker($cmd, [switch] $detach) {
+    function start_docker($entry="", $cmd="", [switch] $detach) {
         $dopt = ""
         if ($detach) {
             $dopt = "-d"
+        }
+        $entry_opt = ""
+        if ($entry -ne "") {
+            $entry_opt = "--entrypoint $entry"
         }
         $str = "run `
             -v $CertPath/rucio.cfg:/opt/rucio/etc/rucio.cfg `
@@ -58,10 +62,8 @@ Process {
             -v $CertPath/ca.crt:/etc/ca.crt `
             -v ${DataDirectory}:/data `
             --name=desktop-rucio `
-            -e RUCIO_ACCOUNT=${RUCIOAccount} `
-            -e GRID_PASSWORD=${GRIDPassword} `
-            -e GRID_VOMS=${VOMS} `
             --rm $dopt -p ${WebPort}:8000 -it `
+            $entry_opt `
             desktop-rucio:$containerVersion `
             $cmd"
         $str = $str -replace "`n","" -replace "`r",""
@@ -102,16 +104,16 @@ Process {
         $needs_cert_update = $true
     }
 
-    # Figure out how we will start things
-    $start_command = ""
-    if ($StartBash) {
-        $start_command = "/bin/bash"
+    # If this is the first time, then we should invoke the script that will copy everything over.
+    if ($needs_cert_update -or $CertificateUpdate) {
+        Write-Host "Not all certificates are downloaded. Will run script in container to copy everything from lxplus."
+        start_docker -entry "/bin/bash" -cmd "/root/web/sync_cert_with_ATLAS.sh ${RUCIOAccount} ${GRIDPassword} ${RUCIOAccount}"
     }
 
-    # If this is the first time, then we should invoke the script that will copy everything over.
-    if ($needs_cert_updat -or $CertificateUpdate) {
-        Write-Host "Not all certificates are downloaded. Will run script in container to copy everything from lxplus."
-        start_docker "/bin/bash /root/web/sync_cert_with_ATLAS.sh ${RUCIOAccount} ${GRIDPassword}"
+    # Start as approprite
+    if ($StartBash) {
+        Write-Host "Not supporting starting the thing with bash just yet"
+    } else {
+        start_docker -cmd "$RUCIOAccount $GRIDPassword $VOMS" -detach
     }
-    start_docker $start_command -detach
 }

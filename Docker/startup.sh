@@ -1,6 +1,18 @@
 #!/bin/bash
 #
-# Start everything running
+# Start everything running. To function we expect a few arguments:
+#
+#  ./startup.sh <rucio_account> <grid_password> <grid_voms>
+#
+if [ $# -ne 3 ]; then
+    echo "Usage: $0 <rucio-account> <grid-password> <grid-voms>"
+    exit
+fi
+
+# Define a few env variables we are doing to need while running
+export RUCIO_ACCOUNT=$1
+export GRID_PASSWORD=$2
+export GRID_VOMS=$3
 
 # Get all the credentials setup with correct permissions,
 # make sure the proxy stuff is going to be where it should be.

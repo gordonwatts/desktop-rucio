@@ -29,4 +29,4 @@ COPY ./src/ /root/web/src/
 
 EXPOSE 8000
 WORKDIR /root/web
-CMD ["./startup.sh"]
+ENTRYPOINT ["/bin/bash", "/root/web/startup.sh"]

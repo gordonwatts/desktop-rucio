@@ -4,15 +4,16 @@
 #
 # Usage: <lxplus-user-name>
 #
-if [ $# -ne 2 ]
+if [ $# -ne 3 ]
   then
-    echo "Usage: sync_cert_with_ATLAS.sh <rucio-username> <cert-password>"
+    echo "Usage: sync_cert_with_ATLAS.sh <lxplus-username> <cert-password> <rucio-username>"
     exit
 fi
 
 # Get username and password
 user=$1
 certpassword=$2
+ruser=$3
 
 echo "To copy certificate files from lxplus.cern.ch, I need your lxplus password"
 echo -n "lxplus Password: "
@@ -38,4 +39,5 @@ echo $certpassword | voms-proxy-init -voms atlas
 echo
 echo
 echo "Running rucio ping to make sure all is ok. Should repond with a version number"
+export RUCIO_ACCOUNT=$ruser
 rucio ping
