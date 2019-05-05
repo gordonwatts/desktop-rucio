@@ -39,6 +39,10 @@ done
 if [ ${#args[@]} -ne 4 ]; then
     echo ${args[@]}
     echo "Usage: startDesktopRucio.sh -ubgpv <cert-path> <data-path> <grid-passwd> <rucio-account-name>"
+    echo "           -u 		Update the certificates in the container before starting"
+    echo "           -b			Start bash rather than the service"
+    echo "	     -g			VOMS (defaults to atlas)"
+    echo "           -v                 Container version (defaults to latest)"
     exit
 fi
 cert_path=${args[0]}
@@ -122,7 +126,7 @@ if [ $startBash -eq 1 ]; then
     echo "Sorry - starting a bash shell not yet implemented"
     echo start_image "/bin/bash" 1
 else
-    echo start_image "" 1
+    start_image "/bin/bash /root/web/startup.sh ${rucio_account} ${grid_password} ${voms}" 1
 fi
 
 exit
