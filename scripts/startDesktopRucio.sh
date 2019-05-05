@@ -95,9 +95,14 @@ fi
 # Helper function to run singularity
 function start_image {
     cmd=$1
-    detach=$2
+    run_default=$2
 
-    singularity exec \
+    s_cmd="run"
+    if [ $run_default -eq 2 ]; then
+        s_cmd="exec"
+    fi
+
+    singularity $s_cmd \
 	--contain \
         --bind $cert_path/rucio.cfg:/opt/rucio/etc/rucio.cfg \
         --bind $cert_path/usercert:/root/rawcert \
@@ -126,7 +131,7 @@ if [ $startBash -eq 1 ]; then
     echo "Sorry - starting a bash shell not yet implemented"
     echo start_image "/bin/bash" 1
 else
-    start_image "/bin/bash /root/web/startup.sh ${rucio_account} ${grid_password} ${voms}" 1
+    start_image "${rucio_account} ${grid_password} ${voms}" 1
 fi
 
 exit
