@@ -64,7 +64,7 @@ Process {
             --name=desktop-rucio `
             --rm $dopt -p ${WebPort}:8000 -it `
             $entry_opt `
-            desktop-rucio:$containerVersion `
+            gordonwatts/desktop-rucio:$containerVersion `
             $cmd"
         $str = $str -replace "`n","" -replace "`r",""
         Invoke-Expression "docker $str"
@@ -112,7 +112,7 @@ Process {
 
     # Start as approprite
     if ($StartBash) {
-        Write-Host "Not supporting starting the thing with bash just yet"
+        start_docker -entry "/bin/bash"
     } else {
         start_docker -cmd "$RUCIOAccount $GRIDPassword $VOMS" -detach
     }
