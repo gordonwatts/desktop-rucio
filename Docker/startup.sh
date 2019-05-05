@@ -6,6 +6,7 @@
 #
 if [ $# -ne 3 ]; then
     echo "Usage: $0 <rucio-account> <grid-password> <grid-voms>"
+    echo "  -> $@"
     exit
 fi
 
@@ -16,11 +17,11 @@ export GRID_VOMS=$3
 
 # Get all the credentials setup with correct permissions,
 # make sure the proxy stuff is going to be where it should be.
-source ./setup.sh
+source /root/web/setup.sh
 
 # Certification manager - will keep the grid certificate vald.
-python3 cert_manager.py &
+python3 /root/web/cert_manager.py &
 
 # The web server. Note that we don't run it in the background.
 mkdir -p /tmp/desktop-rucio-logs
-stdbuf -o0 hug -f src/api.py &> /tmp/desktop-rucio-logs/web_server.log
+stdbuf -o0 hug -f /root/web/src/api.py &> /tmp/desktop-rucio-logs/web_server.log
