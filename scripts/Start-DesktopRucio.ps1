@@ -7,7 +7,6 @@
 # Yes: This is a pain. But without making all these certs public, I'm not sure what the "right"
 # way to do this is.
 #
-# TODO: CertPath needs to be non-empty
 Param(
     # The certifcate folder path
     [Parameter(Mandatory=$true)]

@@ -179,6 +179,50 @@ Files already found locally :                 5
 Files that cannot be downloaded :             0'''], 'shell_result':0, 'delay': 0.01}}
     yield run_dummy_multiple(responses)
 
+@pytest.fixture()
+def rucio_bad_internet_during_download():
+    'Internet goes away during the download'
+    responses = {"cd /data; rucio download mc16_13TeV.311309.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS5_ltlow.deriv.DAOD_EXOT15.e7270_e5984_s3234_r10201_r10210_p3795":
+        {'shell_output': ['''bash-4.2# rucio download mc16_13TeV.311309.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS5_ltlow.deriv.DAOD_EXOT15.e7270_e5984_s3234_r10201_r10210_p3795
+2019-05-05 05:46:51,590 INFO    Processing 1 item(s) for input
+2019-05-05 05:46:51,590 INFO    Getting sources of DIDs
+2019-05-05 05:46:52,432 INFO    Using 3 threads to download 5 files
+2019-05-05 05:46:52,433 INFO    Thread 1/3: Preparing download of mc16_13TeV:DAOD_EXOT15.17545497._000001.pool.root.1
+2019-05-05 05:46:52,437 INFO    Thread 2/3: Preparing download of mc16_13TeV:DAOD_EXOT15.17545497._000002.pool.root.1
+2019-05-05 05:46:52,438 INFO    Thread 3/3: Preparing download of mc16_13TeV:DAOD_EXOT15.17545497._000003.pool.root.1
+2019-05-05 05:46:52,906 INFO    Thread 1/3: Trying to download with root from TAIWAN-LCG2_DATADISK: mc16_13TeV:DAOD_EXOT15.17545497._000001.pool.root.1 
+2019-05-05 05:46:52,969 INFO    Thread 3/3: Trying to download with root from TAIWAN-LCG2_DATADISK: mc16_13TeV:DAOD_EXOT15.17545497._000003.pool.root.1 
+2019-05-05 05:46:52,972 INFO    Thread 2/3: Trying to download with root from TAIWAN-LCG2_DATADISK: mc16_13TeV:DAOD_EXOT15.17545497._000002.pool.root.1 
+2019-05-05 05:47:26,925 WARNING Thread 3/3: Download attempt failed. Try 1/2
+2019-05-05 05:47:26,926 WARNING Thread 1/3: Download attempt failed. Try 1/2
+2019-05-05 05:47:26,926 WARNING Thread 2/3: Download attempt failed. Try 1/2
+2019-05-05 05:49:07,068 WARNING Thread 3/3: Download attempt failed. Try 2/2
+2019-05-05 05:49:07,068 WARNING Thread 1/3: Download attempt failed. Try 2/2
+2019-05-05 05:49:07,078 WARNING Thread 2/3: Download attempt failed. Try 2/2
+2019-05-05 05:51:47,290 ERROR   Thread 2/3: Failed to download item
+2019-05-05 05:51:47,291 INFO    Thread 2/3: Preparing download of mc16_13TeV:DAOD_EXOT15.17545497._000004.pool.root.1
+2019-05-05 05:51:47,292 ERROR   Thread 3/3: Failed to download item
+2019-05-05 05:51:47,294 ERROR   Thread 1/3: Failed to download item
+2019-05-05 05:51:47,295 INFO    Thread 3/3: Preparing download of mc16_13TeV:DAOD_EXOT15.17545497._000005.pool.root.1
+2019-05-05 05:51:47,304 INFO    Thread 3/3: Trying to download with root from TAIWAN-LCG2_DATADISK: mc16_13TeV:DAOD_EXOT15.17545497._000005.pool.root.1 
+2019-05-05 05:51:47,309 WARNING Thread 3/3: Download attempt failed. Try 1/2
+2019-05-05 05:52:47,373 ERROR   Thread 2/3: Failed to download item
+2019-05-05 05:53:27,419 WARNING Thread 3/3: Download attempt failed. Try 2/2
+2019-05-05 05:56:07,602 ERROR   Thread 3/3: Failed to download item
+2019-05-05 05:56:07,602 ERROR   An unknown exception occurred.
+Details: 5 items were in the input queue but only 0 are in the output queue'''], 'shell_result':1}}
+    yield run_dummy_multiple(responses)
+
+@pytest.fixture()
+def rucio_no_internet_download():
+    'No internet at the start of the download command'
+    responses = {"cd /data; rucio download mc16_13TeV.311309.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS5_ltlow.deriv.DAOD_EXOT15.e7270_e5984_s3234_r10201_r10210_p3795":
+        {'shell_output': ['''bash-4.2# rucio download mc16_13TeV.311309.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS5_ltlow.deriv.DAOD_EXOT15.e7270_e5984_s3234_r10201_r10210_p3795
+2019-05-05 05:56:45,898 INFO    Processing 1 item(s) for input
+2019-05-05 05:56:45,899 INFO    Getting sources of DIDs
+2019-05-05 05:57:45,972 ERROR   Cannot connect to the Rucio server.'''], 'shell_result':78}}
+    yield run_dummy_multiple(responses)
+
 #######################
 def test_rucio_ctor():
     _ = rucio()
@@ -266,7 +310,3 @@ def test_download_status(rucio_good_ds_download_takes_time):
     res_future.result()
     assert 0 == len(d_status.status_value('rucio_download', 'downloading'))
     tp.shutdown()
-
-# Test downloads:
-# TODO:
-#   - deal with bad internet - need an example of what this looks like.
