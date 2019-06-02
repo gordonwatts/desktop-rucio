@@ -1,4 +1,4 @@
-# Controler for datasets that are synced locally.
+# Controller for datasets that are synced locally.
 
 import hug
 from src.controllers.globals import datasets
