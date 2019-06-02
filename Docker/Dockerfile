@@ -14,15 +14,20 @@ FROM rucio/rucio-clients:release-1.19.6
 
 # Get the webserver installed
 RUN yum -y install rsync
-RUN yum -y install openssh-clients
-RUN yum -y install sshpass
 RUN yum -y install python36
 RUN yum -y install python36-pip
 RUN pip3 install --upgrade hug 
 
+# The certificates so rucio can properly access everything
+COPY certs/opt/rucio/etc/rucio.cfg /opt/rucio/etc/rucio.cfg
+COPY certs/etc/ca.crt /etc/ca.crt
+
+COPY certs/etc/vomses/ /etc/vomses/
+COPY certs/etc/grid-security/certificates/ /etc/grid-security/certificates/
+COPY certs/etc/grid-security/vomsdir/ /etc/grid-security/vomsdir/
+
 # The local files
 COPY Docker/setup.sh /root/web/setup.sh
-COPY Docker/sync_cert_with_ATLAS.sh /root/web/sync_cert_with_ATLAS.sh
 COPY Docker/cert_manager.py /root/web/cert_manager.py
 COPY Docker/startup.sh /root/web/startup.sh
 COPY ./src/ /root/web/src/

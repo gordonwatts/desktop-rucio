@@ -186,7 +186,17 @@ A few quick items:
 - PR are gratefully accepted on [github](https://github.com/gordonwatts/desktop-rucio).
 - To run unit tests use `pytest` from the base directory of the package. If you fix bugs or add new features,
   please do your best to follow the convention and add tests.
-- To build the `docker` container use `docker build --rm -f "Docker\Dockerfile" -t desktop-rucio:alpha-0.1.0 .` from the package root directory
+
+### Building a container
+
+This is a two step process because certificates must be loaded into the container. `lxplus` is used as a source,
+and they are copied from locations that may be unique to atlas. Though it may be they will work for all experiments.
+
+1. From the base directory of this repo execute `./scripts/sync_cert_with_ATLAS.sh <username>`
+   Where username is your lxplus username. This is best done inside a WSL `bash` shell or similar. You'll need the
+   command `sshpass` installed, for example. `rsync` too.
+1. Enter your lxplus password when requested. It will take a minute or two to download everything.
+2. build the `docker` container using `docker build --rm -f "Docker\Dockerfile" -t desktop-rucio:alpha-0.1.0 .` from the package root directory
 
 ###Testing the docker container
 
