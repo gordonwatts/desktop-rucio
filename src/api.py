@@ -5,10 +5,6 @@ import src.controllers.logs
 import src.controllers.dsfiles
 import src.controllers.syncedds
 
-@hug.get('/')
-def say_hi():
-    return "hi from root"
-
 @hug.extend_api()
 def with_other_apis():
     return [
