@@ -4,8 +4,8 @@
 #
 #  ./startup.sh <rucio_account> <grid_password> <grid_voms>
 #
-if [ $# -ne 3 ]; then
-    echo "Usage: $0 <rucio-account> <grid-password> <grid-voms>"
+if [ $# -ne 4 ]; then
+    echo "Usage: $0 <rucio-account> <grid-password> <grid-voms> <cache-prefix>"
     echo "  -> $@"
     exit
 fi
@@ -14,6 +14,7 @@ fi
 export RUCIO_ACCOUNT=$1
 export GRID_PASSWORD=$2
 export GRID_VOMS=$3
+export CACHE_PREFIX=$4
 
 # Get all the credentials setup with correct permissions,
 # make sure the proxy stuff is going to be where it should be.

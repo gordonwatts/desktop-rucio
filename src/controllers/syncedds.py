@@ -1,7 +1,7 @@
 # Controller for datasets that are synced locally.
 
 import hug
-from src.controllers.globals import datasets
+from src.controllers.globals import datasets, cache_prefix
 from src.grid.datasets import DatasetQueryStatus
 
 @hug.get_post('/ds')
@@ -24,7 +24,7 @@ def get_ds(ds_name:str, request):
                     Is an empty list unless the status is `'local`.
     '''
 
-    status,files = datasets.download_ds(ds_name, do_download=request.method == 'POST')
+    status,files = datasets.download_ds(ds_name, do_download=request.method == 'POST', prefix=cache_prefix)
     if status == DatasetQueryStatus.does_not_exist:
         return {'status': 'not_on_server' if request.method == 'GET' else 'does_not_exist', 'filelist':[]}
     elif status == DatasetQueryStatus.query_queued:

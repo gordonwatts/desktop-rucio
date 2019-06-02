@@ -113,6 +113,6 @@ Process {
     if ($StartBash) {
         start_docker -entry "/bin/bash"
     } else {
-        start_docker -cmd "$RUCIOAccount $GRIDPassword $VOMS" -detach
+        start_docker -cmd "$RUCIOAccount $GRIDPassword $VOMS file://${DataDirectory}" -detach
     }
 }
