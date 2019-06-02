@@ -175,6 +175,12 @@ def cache_empty():
 
     return cache_good_dummy()
 
+@pytest.fixture()
+def cache_with_ds(cache_empty, simple_dataset):
+    'Create a cache with a dataset called dataset1'
+    cache_empty.add_ds(simple_dataset)
+    return cache_empty
+
 def test_dataset_query_queued(rucio_2file_dataset, cache_empty):
     'Queue a dataset'
     dm = dataset_mgr(cache_empty, rucio_mgr=rucio_2file_dataset)
@@ -207,7 +213,7 @@ def test_dataset_query_resolved(rucio_2file_dataset, cache_empty, simple_dataset
 
     # Make sure we didn't re-query for this.
     assert 1 == rucio_2file_dataset.CountCalled == 1
-    info = cache_empty.get_listing(simple_dataset.Name)
+    _ = cache_empty.get_listing(simple_dataset.Name)
 
 def test_query_for_bad_dataset(rucio_2file_dataset, cache_empty, simple_dataset):
     'Ask for a bad dataset, and get back a null'
@@ -485,3 +491,17 @@ def test_dataset_download_restart_and_marked(rucio_do_nothing, rucio_2file_datas
     # status, _ = dm.download_ds(simple_dataset.Name)
 
     # assert DatasetQueryStatus.results_valid == status
+
+def test_dataset_no_prefix(rucio_do_nothing, cache_with_ds):
+    dm = dataset_mgr(cache_with_ds, rucio_mgr=rucio_do_nothing)
+    status, files = dm.download_ds('dataset1')
+    assert DatasetQueryStatus.results_valid == status
+    assert 2 == len(files)
+    assert 'f1.root' == files[0]
+
+def test_dataset_with_prefix(rucio_do_nothing, cache_with_ds):
+    dm = dataset_mgr(cache_with_ds, rucio_mgr=rucio_do_nothing)
+    status, files = dm.download_ds('dataset1', prefix='file://cache/')
+    assert DatasetQueryStatus.results_valid == status
+    assert 2 == len(files)
+    assert 'file://cache/f1.root' == files[0]
