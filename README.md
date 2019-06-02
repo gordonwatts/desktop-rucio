@@ -187,3 +187,14 @@ A few quick items:
 - To run unit tests use `pytest` from the base directory of the package. If you fix bugs or add new features,
   please do your best to follow the convention and add tests.
 - To build the `docker` container use `docker build --rm -f "Docker\Dockerfile" -t desktop-rucio:alpha-0.1.0 .` from the package root directory
+
+###Testing the docker container
+
+The container usually starts in such a way that if it is having errors they aren't printed to stdout. You'll need to start things by hand to see what happens.
+
+- Start it without running the startup script. On windows use the `-StartBash` flag.
+- Get the shell variables defined: `source setup.sh`
+- Start the server with `./startup.sh` - it will demand a few arguments.
+- Log files are written into the container at `/tmp/desktop-rucio-logs`. The webserver is particularly useful when it crashes silently.
+
+```

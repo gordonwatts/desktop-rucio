@@ -12,7 +12,7 @@
 # For more info see the documentation.
 FROM rucio/rucio-clients:release-1.19.6
 
-# Get the webserver installed and running
+# Get the webserver installed
 RUN yum -y install rsync
 RUN yum -y install openssh-clients
 RUN yum -y install sshpass
