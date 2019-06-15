@@ -1,8 +1,8 @@
 #!/bin/bash
 #
-# Start everything running. To function we expect a few arguments:
+# Start everything running as a web server. To function we expect a few arguments:
 #
-#  ./startup.sh <rucio_account> <grid_password> <grid_voms>
+#  ./startup_web.sh <rucio_account> <grid_password> <grid_voms>
 #
 if [ $# -ne 4 ]; then
     echo "Usage: $0 <rucio-account> <grid-password> <grid-voms> <cache-prefix>"
