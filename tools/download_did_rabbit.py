@@ -6,6 +6,8 @@ import sys
 import ast
 import pickle
 from time import sleep
+import json
+import base64
 
 from src.controllers.globals import datasets, cache_prefix
 from src.grid.datasets import DatasetQueryStatus
@@ -14,18 +16,25 @@ from src.grid.datasets import DatasetQueryStatus
 def process_message(ch, method, properties, body):
     # The body contains the ast, in pickle format.
     # TODO: errors! Errors! Errors!
-    a = pickle.loads(body)
-    if a is None:
+    info = json.loads(body)
+    hash = info['hash']
+    a = pickle.loads(base64.b64decode(info['ast']))
+    if a is None or not isinstance(a, ast.AST):
         print (f"Body of message wasn't of type AST: {a}")
         ch.basic_ack(delivery_tag=method.delivery_tag)
         return
 
     # Next, lets look at it and process the files.
+    ch.basic_publish(exchange='', routing_key='status_change_state', body=json.dumps({'hash':hash, 'phase':'downloading'}))
     new_ast = gridds.use_executor_dataset_resolver(a, chained_executor=lambda a: a)
+    ch.basic_publish(exchange='', routing_key='status_change_state', body=json.dumps({'hash':hash, 'phase':'done_downloading'}))
 
     # Pickle the converted AST back up, and send it down the line.
-    new_pickle = pickle.dumps(new_ast)
-    ch.basic_publish(exchange='', routing_key='parse_cpp', body=new_pickle)
+    new_info = {
+        'hash': hash,
+        'ast': base64.b64encode(pickle.dumps(new_ast)).decode(),
+    }
+    ch.basic_publish(exchange='', routing_key='parse_cpp', body=json.dumps(new_info))
 
     # We are done with the download and we've sent the message on. Time to ask it so
     # we don't try to do it again.
