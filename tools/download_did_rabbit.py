@@ -8,6 +8,7 @@ import pickle
 from time import sleep
 import json
 import base64
+import os
 
 from src.controllers.globals import datasets, cache_prefix
 from src.grid.datasets import DatasetQueryStatus
@@ -63,14 +64,17 @@ def download_ds (parsed_url, url:str):
         # Ok - lets hang out for a while.
         sleep(5)
 
-def listen_to_queue(rabbit_node:str):
+def listen_to_queue(rabbit_node:str, rabbit_user:str, rabbit_pass:str):
     'Download and pass on datasets as we see them'
 
     # Config the scanner
     gridds.resolve_callbacks['localds'] = download_ds
 
     # Connect and setup the queues we will listen to and push once we've done.
-    connection = pika.BlockingConnection(pika.ConnectionParameters(host=rabbit_node))
+    if rabbit_pass in os.environ:
+        rabbit_pass = os.environ[rabbit_pass]
+    credentials = pika.PlainCredentials(rabbit_user, rabbit_pass)
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host=rabbit_node, credentials=credentials))
     channel = connection.channel()
     channel.queue_declare(queue='find_did')
     channel.queue_declare(queue='parse_cpp')
@@ -83,8 +87,8 @@ def listen_to_queue(rabbit_node:str):
 
 
 if __name__ == '__main__':
-    bad_args = len(sys.argv) != 2
+    bad_args = len(sys.argv) != 4
     if bad_args:
-        print ("Usage: python download_did_rabbit.py <rabbit-mq-node-address>")
+        print ("Usage: python download_did_rabbit.py <rabbit-mq-node-address> <username> <password>")
     else:
-        listen_to_queue (sys.argv[1])
+        listen_to_queue (sys.argv[1], sys.argv[2], sys.argv[3])
