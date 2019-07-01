@@ -26,5 +26,9 @@ COPY certs/etc/grid-security/vomsdir/ /etc/grid-security/vomsdir/
 COPY ./src/ /root/web/src/
 COPY ./tools /root/web
 
+# Turn this on so that stdout isn't buffered - otherwise logs in kubectl don't
+# show up until much later!
+ENV PYTHONUNBUFFERED=1
+
 EXPOSE 8000
 ENTRYPOINT ["/bin/bash", "/root/web/startup_web.sh"]
